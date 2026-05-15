@@ -732,7 +732,7 @@ function setBusy(v,btnId){isBusy=v;if(btnId){const b=document.getElementById(btn
 // APPS SCRIPT
 // ══════════════════════════════════════════
 async function gasCall(body){
-  const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   const t=await r.text();
   let d;try{d=JSON.parse(t);}catch{throw new Error('回應錯誤：'+t.slice(0,100));}
   if(d.error)throw new Error(d.error);
