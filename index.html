@@ -376,9 +376,15 @@ textarea{resize:vertical;min-height:60px;}
 
         <!-- Scan button -->
         <input type="file" id="receiptFileInput" accept="image/*" style="display:none" onchange="handleReceiptScan(event)">
-        <button onclick="document.getElementById('receiptFileInput').click()" style="width:100%;padding:12px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:14px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
-          📷 拍照掃描收據（自動辨識）
-        </button>
+        <input type="file" id="receiptCameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptScan(event)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <button type="button" onclick="document.getElementById('receiptCameraInput').click()" style="padding:12px 8px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
+            📷 拍照
+          </button>
+          <button type="button" onclick="document.getElementById('receiptFileInput').click()" style="padding:12px 8px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
+            🖼 選相片
+          </button>
+        </div>
         <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px;text-align:center"></div>
         <!-- Preview -->
         <div id="receiptPreview" style="display:none;margin-bottom:12px;text-align:center">
