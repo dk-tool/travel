@@ -230,6 +230,10 @@ textarea{resize:vertical;min-height:60px;}
 .itin-pick-item:active{background:var(--cream);}
 .itin-pick-item.in-day{opacity:.45;cursor:default;}
 .itin-pick-badge{font-size:10px;color:white;background:var(--teal);border-radius:3px;padding:1px 6px;flex-shrink:0;}
+/* SETTINGS */
+.setting-chip{display:inline-flex;align-items:center;gap:5px;background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;margin:3px;}
+.setting-chip button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0;line-height:1;}
+.setting-chip button:hover{color:var(--red);}
 </style>
 </head>
 <body>
@@ -266,6 +270,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="tab" id="tab-btn-budget" onclick="switchTab('budget')">💰 記帳</div>
     <div class="tab" id="tab-btn-add" onclick="switchTab('add')">✏️ 新增</div>
     <div class="tab tab-back" onclick="goToTrips()">← 旅程</div>
+    <div class="tab" id="tab-btn-settings" onclick="switchTab('settings')" style="font-size:16px">⚙️</div>
   </div>
   <div class="main">
 
@@ -274,7 +279,7 @@ textarea{resize:vertical;min-height:60px;}
       <div class="stats-bar" id="shopStatsBar"></div>
       <div class="list-controls">
         <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="shopFilter" placeholder="搜尋品牌、商品..." oninput="renderShop()"></div>
-        <div class="filter-btns">
+        <div class="filter-btns" id="shopFilterBtns">
           <button class="filter-btn active" onclick="setShopFilter('all')">全部</button>
           <button class="filter-btn" onclick="setShopFilter('未購買')">未購買</button>
           <button class="filter-btn" onclick="setShopFilter('已購買')">已購買</button>
@@ -293,7 +298,7 @@ textarea{resize:vertical;min-height:60px;}
       <div class="stats-bar" id="spotStatsBar"></div>
       <div class="list-controls">
         <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="spotFilter" placeholder="搜尋景點..." oninput="renderSpots()"></div>
-        <div class="filter-btns">
+        <div class="filter-btns" id="spotFilterBtns">
           <button class="filter-btn active" onclick="setSpotFilter('all')">全部</button>
           <button class="filter-btn" onclick="setSpotFilter('未去')">未去</button>
           <button class="filter-btn" onclick="setSpotFilter('已去')">已去</button>
@@ -307,7 +312,42 @@ textarea{resize:vertical;min-height:60px;}
       <div class="items-grid" id="spotList"></div>
     </div>
 
-    <!-- ITINERARY -->
+    <!-- SETTINGS -->
+    <div id="panel-settings" class="panel">
+      <div class="form-card">
+        <div class="form-title">⚙️ 自訂選項設定</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">設定後所有使用者共用，儲存到 Google Sheets。</p>
+
+        <div class="form-group">
+          <label>🛍 購物分類</label>
+          <div id="settings-shop-cats" style="margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="new-shop-cat" placeholder="新增分類..." style="flex:1">
+            <button onclick="addSettingItem('shopCats','new-shop-cat')" class="btn btn-primary" style="width:60px;margin-top:0;padding:0">＋</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>📍 景點類型</label>
+          <div id="settings-spot-cats" style="margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="new-spot-cat" placeholder="新增類型..." style="flex:1">
+            <button onclick="addSettingItem('spotCats','new-spot-cat')" class="btn btn-teal" style="width:60px;margin-top:0;padding:0">＋</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>💰 記帳分類</label>
+          <div id="settings-budget-cats" style="margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="new-budget-cat" placeholder="新增分類..." style="flex:1">
+            <button onclick="addSettingItem('budgetCats','new-budget-cat')" class="btn" style="width:60px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()" style="margin-top:8px">💾 儲存設定</button>
+      </div>
+    </div>
     <div id="panel-itinerary" class="panel">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <button onclick="addDay()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--teal);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">＋ 新增天數</button>
@@ -337,7 +377,7 @@ textarea{resize:vertical;min-height:60px;}
         <span id="rateStatus" style="font-size:10px;color:var(--muted);width:100%"></span>
       </div>
       <!-- Filter -->
-      <div class="filter-btns" style="margin-bottom:10px">
+      <div class="filter-btns" id="budgetFilterBtns" style="margin-bottom:10px">
         <button class="filter-btn active" onclick="setBudgetFilter('all')">全部</button>
         <button class="filter-btn" onclick="setBudgetFilter('餐飲')">🍜 餐飲</button>
         <button class="filter-btn" onclick="setBudgetFilter('交通')">🚅 交通</button>
@@ -839,6 +879,7 @@ async function selectTrip(id){
   switchTab('shopping');
   loadRates();
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
+  await loadSettings();
   await loadShopItems();
   await loadSpotItems();
   await loadBudgetItems();
@@ -1117,15 +1158,16 @@ function renderSpots(){
 // UI
 // ══════════════════════════════════════════
 function switchTab(tab){
-  ['shopping','spots','itinerary','budget','add','add-shop','add-spot','add-budget'].forEach(t=>{
+  ['shopping','spots','itinerary','budget','settings','add','add-shop','add-spot','add-budget'].forEach(t=>{
     document.getElementById('panel-'+t)?.classList.remove('active');
   });
   document.getElementById('panel-'+tab)?.classList.add('active');
-  ['shopping','spots','itinerary','budget','add'].forEach(t=>{
+  ['shopping','spots','itinerary','budget','settings','add'].forEach(t=>{
     document.getElementById('tab-btn-'+t)?.classList.remove('active');
   });
-  if(['shopping','spots','itinerary','budget','add'].includes(tab))document.getElementById('tab-btn-'+tab)?.classList.add('active');
+  if(['shopping','spots','itinerary','budget','settings','add'].includes(tab))document.getElementById('tab-btn-'+tab)?.classList.add('active');
   if(['add-shop','add-spot','add-budget'].includes(tab))document.getElementById('tab-btn-add')?.classList.add('active');
+  if(tab==='settings') renderSettingsPanel();
 }
 
 function setShopFilter(f){
@@ -1701,7 +1743,9 @@ async function addSpotToDay(dayId, spotId){
   if(day.spotIds.includes(spotId)){ alert('此景點已在此天行程中'); return; }
   day.spotIds.push(spotId);
   renderItinerary();
-  renderAddToItinDays(); // update modal
+  renderAddToItinDays();
+  closeModal('addToItinBackdrop');
+  switchTab('spots'); // 自動回到景點頁
   const row = itinRowMap[day.id];
   if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
 }
@@ -1830,6 +1874,137 @@ function renderAddToItinDays(){
       ${already?`<span class="itin-pick-badge">已加入</span>`:'<span style="color:var(--teal);font-size:18px">＋</span>'}
     </div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+const SETTINGS_SHEET = 'Settings';
+let settings = {
+  shopCats: ['食品','服飾','美妝','工藝品','紀念品','其他'],
+  spotCats: ['自然','歷史','美食','購物街','體驗','其他'],
+  budgetCats: ['餐飲','交通','住宿','購物','門票','其他']
+};
+
+async function loadSettings() {
+  try {
+    await gsEnsure(SETTINGS_SHEET, ['key','values']);
+    const rows = await gsGet(SETTINGS_SHEET);
+    rows.slice(1).forEach(row => {
+      if (row[0] && row[1]) {
+        try { settings[row[0]] = JSON.parse(row[1]); } catch(e) {}
+      }
+    });
+  } catch(e) { console.warn('Settings load failed:', e); }
+  applySettings();
+}
+
+function applySettings() {
+  // Update all dropdowns with current settings
+  updateSelectOptions('inp-cat', settings.shopCats, shopCatIcons);
+  updateSelectOptions('es-cat', settings.shopCats, shopCatIcons);
+  updateSelectOptions('spot-cat', settings.spotCats, spotCatIcons);
+  updateSelectOptions('ep-cat', settings.spotCats, spotCatIcons);
+  updateSelectOptions('bud-cat', settings.budgetCats, budgetCatIcons);
+  updateSelectOptions('eb-cat', settings.budgetCats, budgetCatIcons);
+  renderSettingsPanel();
+}
+
+const shopCatIcons   = {'食品':'🍱','服飾':'👕','美妝':'💄','工藝品':'🏺','紀念品':'🎁','其他':'📦'};
+const spotCatIcons   = {'自然':'🌿','歷史':'🏯','美食':'🍜','購物街':'🛍','體驗':'🎨','其他':'📌'};
+const budgetCatIcons = {'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','其他':'📦'};
+
+function getIcon(cat, iconMap) {
+  return iconMap[cat] || '📌';
+}
+
+function updateSelectOptions(elId, cats, iconMap) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const current = el.value;
+  el.innerHTML = cats.map(c => `<option value="${c}">${getIcon(c,iconMap)} ${c}</option>`).join('');
+  if (cats.includes(current)) el.value = current;
+}
+
+function renderSettingsPanel() {
+  renderSettingChips('settings-shop-cats', 'shopCats', shopCatIcons);
+  renderSettingChips('settings-spot-cats', 'spotCats', spotCatIcons);
+  renderSettingChips('settings-budget-cats', 'budgetCats', budgetCatIcons);
+  // Also update filter buttons
+  updateShopFilters();
+  updateSpotFilters();
+  updateBudgetFilters();
+}
+
+function renderSettingChips(containerId, settingKey, iconMap) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = settings[settingKey].map((cat, i) =>
+    `<span class="setting-chip">${getIcon(cat,iconMap)} ${cat}
+      <button onclick="removeSettingItem('${settingKey}',${i})">×</button>
+    </span>`
+  ).join('');
+}
+
+function addSettingItem(settingKey, inputId) {
+  const val = document.getElementById(inputId).value.trim();
+  if (!val || settings[settingKey].includes(val)) return;
+  settings[settingKey].push(val);
+  document.getElementById(inputId).value = '';
+  renderSettingsPanel();
+}
+
+function removeSettingItem(settingKey, idx) {
+  settings[settingKey].splice(idx, 1);
+  renderSettingsPanel();
+}
+
+async function saveSettings() {
+  setBusy(true, 'saveSettingsBtn');
+  showSync('⟳ 儲存設定...', 'var(--muted)');
+  try {
+    // Clear and rewrite settings sheet
+    await gsEnsure(SETTINGS_SHEET, ['key','values']);
+    const rows = await gsGet(SETTINGS_SHEET);
+    // Delete existing data rows (from bottom up)
+    for (let i = rows.length; i > 1; i--) {
+      await gsDel(SETTINGS_SHEET, i);
+    }
+    // Write new settings
+    for (const [key, val] of Object.entries(settings)) {
+      await gsAppend(SETTINGS_SHEET, [key, JSON.stringify(val)]);
+    }
+    showSync('✅ 設定已儲存', 'var(--sage)');
+    applySettings();
+  } catch(e) {
+    showSync('❌ ' + e.message, 'var(--red)');
+  }
+  setBusy(false, 'saveSettingsBtn');
+}
+
+function updateShopFilters() {
+  const el = document.getElementById('shopFilterBtns');
+  if (!el) return;
+  el.innerHTML = `<button class="filter-btn active" onclick="setShopFilter('all')">全部</button>
+    <button class="filter-btn" onclick="setShopFilter('未購買')">未購買</button>
+    <button class="filter-btn" onclick="setShopFilter('已購買')">已購買</button>
+    ${settings.shopCats.map(c=>`<button class="filter-btn" onclick="setShopFilter('${c}')">${c}</button>`).join('')}`;
+}
+
+function updateSpotFilters() {
+  const el = document.getElementById('spotFilterBtns');
+  if (!el) return;
+  el.innerHTML = `<button class="filter-btn active" onclick="setSpotFilter('all')">全部</button>
+    <button class="filter-btn" onclick="setSpotFilter('未去')">未去</button>
+    <button class="filter-btn" onclick="setSpotFilter('已去')">已去</button>
+    ${settings.spotCats.map(c=>`<button class="filter-btn" onclick="setSpotFilter('${c}')">${c}</button>`).join('')}`;
+}
+
+function updateBudgetFilters() {
+  const el = document.getElementById('budgetFilterBtns');
+  if (!el) return;
+  el.innerHTML = `<button class="filter-btn active" onclick="setBudgetFilter('all')">全部</button>
+    ${settings.budgetCats.map(c=>`<button class="filter-btn" onclick="setBudgetFilter('${c}')">${getIcon(c,budgetCatIcons)} ${c}</button>`).join('')}`;
 }
 
 // ══════════════════════════════════════════
