@@ -1564,16 +1564,12 @@ function openPhotoViewer(url) {
 }
 
 // ══════════════════════════════════════════
-// RECEIPT SCAN (Gemini Vision)
+// RECEIPT SCAN (via Apps Script proxy)
 // ══════════════════════════════════════════
-const GEMINI_KEY = 'AIzaSyAtocO6cdprdlapl1qC2X3ZnIoNDDdd1zo';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_KEY}`;
-
 async function handleReceiptScan(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  // Show preview
   const reader = new FileReader();
   reader.onload = e => {
     document.getElementById('receiptImg').src = e.target.result;
@@ -1581,78 +1577,24 @@ async function handleReceiptScan(event) {
   };
   reader.readAsDataURL(file);
 
-  document.getElementById('scanStatus').textContent = '⟳ 辨識中...';
-  document.getElementById('scanStatus').style.color = 'var(--muted)';
-
-  // Convert to base64
-  const base64 = await fileToBase64(file);
-  const mimeType = file.type || 'image/jpeg';
-
-  const prompt = `分析這張收據或帳單照片，回傳以下 JSON，只回傳純 JSON 不要其他文字：
-{"amount":合計金額數字,"currency":"幣別(JPY/TWD/USD/EUR/KRW/HKD)","category":"分類(餐飲/交通/住宿/購物/門票/其他)","note":"店名+主要購買商品，翻譯成繁體中文，最多20字","date":"日期YYYY-MM-DD或空字串"}
-注意：note 必須用繁體中文，例如「治一郎 布丁・年輪蛋糕」，amount 取最終合計。`;
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.textContent = '⟳ 辨識中...';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.style.whiteSpace = 'normal';
+  statusEl.style.wordBreak = 'normal';
 
   try {
-    const resp = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inline_data: { mime_type: mimeType, data: base64 } }
-          ]
-        }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
-      })
+    const base64 = await fileToBase64(file);
+    const mimeType = file.type || 'image/jpeg';
+
+    const result = await gasCall({
+      action: 'scanReceipt',
+      imageBase64: base64,
+      mimeType: mimeType
     });
 
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-    }
-
-    const data = await resp.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data).slice(0,300);
-
-    // Debug: show raw response
-    const statusEl = document.getElementById('scanStatus');
-    statusEl.textContent = 'Gemini 回傳：' + text;
-    statusEl.style.color = 'var(--blue)';
-    statusEl.style.whiteSpace = 'pre-wrap';
-    statusEl.style.wordBreak = 'break-all';
-
-    // Try to extract JSON
-    let jsonStr = text.replace(/[\u0060]{3}json\s*/gi,'').replace(/[\u0060]{3}\s*/gi,'').trim();
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    let jsonToParse = jsonMatch ? jsonMatch[0] : jsonStr;
-    // If JSON is truncated, try to close it
-    if (!jsonToParse.trim().endsWith('}')) {
-      jsonToParse = jsonToParse.trim() + '"}';
-    }
-    let result;
-    try { result = JSON.parse(jsonToParse); }
-    catch(pe) {
-      // Last resort: extract key values with regex
-      const amtMatch = jsonToParse.match(/"amount"\s*:\s*(\d+)/);
-      const curMatch = jsonToParse.match(/"currency"\s*:\s*"([^"]+)"/);
-      const catMatch = jsonToParse.match(/"category"\s*:\s*"([^"]+)"/);
-      const noteMatch = jsonToParse.match(/"note"\s*:\s*"([^"]+)"/);
-      const dateMatch = jsonToParse.match(/"date"\s*:\s*"([^"]+)"/);
-      if (!amtMatch) throw new Error('無法取得金額，回傳：' + jsonToParse);
-      result = {
-        amount: parseInt(amtMatch[1]),
-        currency: curMatch?.[1] || 'JPY',
-        category: catMatch?.[1] || '其他',
-        note: noteMatch?.[1] || '',
-        date: dateMatch?.[1] || ''
-      };
-    }
-
-    // Fill form
-    if (result.amount && result.amount > 0) {
+    if (result.amount && result.amount > 0)
       document.getElementById('bud-amount').value = result.amount;
-    }
     if (result.currency) {
       const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
       if (stdCurs.includes(result.currency)) {
@@ -1671,18 +1613,15 @@ async function handleReceiptScan(event) {
     if (result.date) document.getElementById('bud-date').value = result.date;
 
     updateTWDPreview();
-    document.getElementById('scanStatus').textContent = '✅ 辨識完成，請確認後儲存';
-    document.getElementById('scanStatus').style.color = 'var(--sage)';
+    statusEl.textContent = '✅ 辨識完成，請確認後儲存';
+    statusEl.style.color = 'var(--sage)';
 
   } catch(e) {
-    document.getElementById('scanStatus').textContent = `❌ 辨識失敗：${e.message}`;
-    document.getElementById('scanStatus').style.color = 'var(--red)';
+    statusEl.textContent = '❌ 辨識失敗：' + e.message;
+    statusEl.style.color = 'var(--red)';
   }
-
-  // Reset file input so same file can be scanned again
   event.target.value = '';
 }
-
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
