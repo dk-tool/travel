@@ -1588,9 +1588,9 @@ async function handleReceiptScan(event) {
   const base64 = await fileToBase64(file);
   const mimeType = file.type || 'image/jpeg';
 
-  const prompt = `分析這張收據或帳單照片，回傳以下 JSON，不要有任何其他文字、不要用 markdown、不要用代碼塊，只回傳純 JSON：
-{"amount":金額數字,"currency":"幣別(JPY/TWD/USD/EUR/KRW/HKD)","category":"分類(餐飲/交通/住宿/購物/門票/其他)","note":"店名或說明最多15字","date":"日期YYYY-MM-DD或空字串"}
-金額取收據上最終合計金額。`;
+  const prompt = `分析這張收據或帳單照片，回傳以下 JSON，只回傳純 JSON 不要其他文字：
+{"amount":合計金額數字,"currency":"幣別(JPY/TWD/USD/EUR/KRW/HKD)","category":"分類(餐飲/交通/住宿/購物/門票/其他)","note":"店名+主要購買商品，最多20字","date":"日期YYYY-MM-DD或空字串"}
+注意：note 要包含店名和主要商品名稱，例如「治郎 布丁・バウム」，amount 取最終合計。`;
 
   try {
     const resp = await fetch(GEMINI_URL, {
