@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🇯🇵 日本旅遊紀錄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Shippori+Mincho:wght@400;600;800&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1410;--paper:#f5f0e8;--cream:#ede7d5;
+  --rust:#b85c38;--gold:#c9964a;--sage:#6b7c5e;
+  --muted:#8a7e6e;--border:#d4c9b0;--white:#fdfaf4;
+  --red:#c0392b;--blue:#2e5984;--teal:#2a7d6f;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;}
+
+/* HEADER */
+.header-tape{height:5px;background:repeating-linear-gradient(90deg,var(--rust) 0,var(--rust) 20px,var(--gold) 20px,var(--gold) 40px);opacity:.75;}
+header{background:var(--white);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);position:sticky;top:0;z-index:50;}
+.header-stamp{width:44px;height:44px;border:2px solid var(--rust);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--rust);font-family:'Shippori Mincho',serif;font-size:9px;font-weight:800;text-align:center;transform:rotate(-3deg);opacity:.85;flex-shrink:0;}
+.stamp-big{font-size:18px;font-weight:800;line-height:1;}
+.header-text{flex:1;min-width:0;}
+.header-text h1{font-family:'Shippori Mincho',serif;font-size:16px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-text p{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+#syncStatus{font-size:10px;color:var(--muted);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.icon-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;background:var(--paper);flex-shrink:0;}
+.icon-btn:active{background:var(--cream);}
+
+/* SCREENS */
+.screen{display:none;}.screen.active{display:block;}
+
+/* TRIP LIST */
+.trip-list-wrap{max-width:600px;margin:0 auto;padding:20px 14px;}
+.section-title{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:800;margin-bottom:4px;}
+.section-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+.trip-cards{display:grid;gap:10px;margin-bottom:14px;}
+.trip-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.trip-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--rust);}
+.trip-card:active{background:var(--cream);}
+.trip-icon{font-size:26px;flex-shrink:0;}
+.trip-body{flex:1;min-width:0;}
+.trip-name{font-family:'Shippori Mincho',serif;font-size:16px;font-weight:700;}
+.trip-regions{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
+.trip-region-tag{background:var(--cream);border:1px solid var(--border);border-radius:2px;padding:1px 6px;font-size:10px;color:var(--muted);}
+.trip-date{font-size:11px;color:var(--muted);margin-top:3px;}
+.trip-del{width:30px;height:30px;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--muted);background:var(--paper);flex-shrink:0;}
+.trip-del:active{background:#fef2f2;color:var(--red);}
+.btn-add-trip{width:100%;padding:14px;border:2px dashed var(--border);border-radius:8px;background:transparent;font-size:14px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.btn-add-trip:active{border-color:var(--rust);color:var(--rust);}
+
+/* TABS */
+.tabs{display:flex;background:var(--cream);border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:69px;z-index:40;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:10px 18px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;flex-shrink:0;}
+.tab.active{color:var(--rust);border-bottom-color:var(--rust);font-weight:600;}
+.tab-back{margin-left:auto;color:var(--muted);}
+
+/* MAIN */
+.main{max-width:700px;margin:0 auto;padding:14px 12px 80px;}
+.panel{display:none;}.panel.active{display:block;}
+
+/* ADD PICKER */
+.add-picker{display:flex;flex-direction:column;gap:12px;padding:8px 0;}
+.add-pick-btn{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--white);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;font-family:'Noto Sans TC',sans-serif;width:100%;}
+.add-pick-btn:active{background:var(--cream);}
+.add-pick-icon{font-size:28px;flex-shrink:0;}
+.add-pick-label{font-size:15px;font-weight:600;color:var(--ink);}
+.add-pick-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* FORM */
+.form-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;position:relative;}
+.form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--rust),var(--gold));border-radius:8px 8px 0 0;}
+.form-card.teal::before{background:linear-gradient(90deg,var(--teal),var(--sage));}
+.form-title{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.back-link{font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:12px;display:inline-flex;align-items:center;gap:4px;}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.form-group:last-child{margin-bottom:0;}
+label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+input,select,textarea{background:var(--paper);border:1px solid var(--border);border-radius:5px;padding:9px 11px;font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--ink);outline:none;width:100%;transition:border-color .2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--rust);background:var(--white);}
+textarea{resize:vertical;min-height:60px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.priority-stars{display:flex;gap:8px;margin-top:2px;}
+.star{width:32px;height:32px;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;background:var(--paper);}
+.star.active{background:#fff3cd;border-color:var(--gold);}
+.btn{width:100%;padding:12px;border:none;border-radius:6px;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;}
+.btn-primary{background:var(--rust);color:white;}
+.btn-primary:active{background:#9e4d2e;}
+.btn-primary:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+.btn-teal{background:var(--teal);color:white;}
+.btn-teal:active{background:#1f5e53;}
+.btn-teal:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+.btn-secondary{background:var(--cream);color:var(--muted);border:1px solid var(--border);}
+
+/* STATS */
+.stats-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.stat-pill{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--muted);}
+.stat-pill strong{color:var(--ink);font-size:13px;}
+
+/* FILTER */
+.list-controls{margin-bottom:12px;}
+.search-bar{position:relative;margin-bottom:8px;}
+.search-bar input{width:100%;padding:9px 12px 9px 32px;}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
+.filter-btns{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+.filter-btns::-webkit-scrollbar{display:none;}
+.filter-btn{padding:4px 10px;border:1px solid var(--border);border-radius:20px;font-size:11px;cursor:pointer;background:var(--white);color:var(--muted);white-space:nowrap;flex-shrink:0;font-family:'Noto Sans TC',sans-serif;}
+.filter-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.filter-btn.teal-active{background:var(--teal);color:white;border-color:var(--teal);}
+
+/* ITEM CARDS */
+.items-grid{display:grid;gap:8px;}
+.item-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.item-card.purchased{opacity:.55;}
+.item-card.purchased .item-name,.item-card.visited .item-name{text-decoration:line-through;}
+.item-card.visited{opacity:.55;}
+.item-row1{display:flex;align-items:flex-start;gap:10px;}
+.item-check{width:22px;height:22px;border:2px solid var(--border);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px;transition:all .15s;}
+.item-card.purchased .item-check{background:var(--sage);border-color:var(--sage);color:white;}
+.item-card.visited .item-check{background:var(--teal);border-color:var(--teal);color:white;}
+.item-content{flex:1;min-width:0;}
+.item-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;}
+.cat-badge{padding:1px 7px;border-radius:2px;font-size:10px;font-weight:600;letter-spacing:.5px;flex-shrink:0;}
+.cat-food{background:#fef3e2;color:#b45309;}
+.cat-fashion{background:#fce7f3;color:#9d174d;}
+.cat-cosmetic{background:#ede9fe;color:#5b21b6;}
+.cat-crafts{background:#d1fae5;color:#065f46;}
+.cat-souvenir{background:#dbeafe;color:#1e40af;}
+.cat-other{background:#f3f4f6;color:#374151;}
+.cat-nature{background:#d1fae5;color:#065f46;}
+.cat-history{background:#fef3e2;color:#92400e;}
+.cat-food-spot{background:#fce7f3;color:#9d174d;}
+.cat-shopping-area{background:#dbeafe;color:#1e40af;}
+.cat-experience{background:#ede9fe;color:#5b21b6;}
+.cat-spot-other{background:#f3f4f6;color:#374151;}
+.item-name{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:600;}
+.item-brand{font-size:11px;color:var(--muted);font-style:italic;}
+.item-meta{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;}
+.item-note{font-size:11px;color:var(--muted);margin-top:5px;padding:4px 8px;background:var(--paper);border-left:3px solid var(--border);font-style:italic;border-radius:0 3px 3px 0;}
+.item-actions{display:flex;gap:5px;flex-shrink:0;}
+.act-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;background:var(--paper);}
+.act-btn:active{background:var(--cream);}
+.act-btn.danger:active{background:#fef2f2;}
+
+/* LINKS IN CARD */
+.links-section{margin-top:8px;}
+.links-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.link-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--paper);border:1px solid var(--border);border-radius:5px;text-decoration:none;color:var(--ink);font-size:12px;margin-bottom:4px;}
+.link-row:active{background:#e8f0fe;}
+.link-row-name{flex:1;font-weight:500;}
+.link-row-arrow{font-size:11px;color:var(--blue);flex-shrink:0;}
+.search-link{border-style:dashed;border-color:var(--blue);}
+.search-link .link-row-name{color:var(--blue);}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-state .emoji{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:13px;}
+
+/* MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:flex-end;justify-content:center;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--white);border-radius:16px 16px 0 0;padding:20px 16px 32px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.2);}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.modal h3{font-family:'Shippori Mincho',serif;font-size:17px;font-weight:700;margin-bottom:16px;}
+.modal-actions{display:flex;gap:10px;margin-top:16px;padding-top:14px;border-top:1px dashed var(--border);}
+.modal-actions .btn{margin-top:0;}
+
+/* STORE/LINK INPUTS */
+.link-input-wrap{margin-bottom:8px;}
+.link-input-row{display:flex;gap:8px;}
+.link-input-row>div{flex:1;}
+.link-input-row input{margin-bottom:4px;}
+.link-del-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:5px;background:var(--paper);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:18px;}
+.link-del-btn:active{background:#fef2f2;}
+.add-link-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border:1px dashed var(--border);border-radius:5px;background:transparent;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;width:100%;justify-content:center;margin-top:4px;}
+.add-link-btn:active{border-color:var(--blue);color:var(--blue);}
+
+/* BUDGET */
+.budget-summary {background:var(--white);border:1px solid var(--border);border-radius:8px;padding:14px 16px;position:relative;overflow:hidden;}
+.budget-summary::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--rust));}
+.budget-total{font-family:'Shippori Mincho',serif;font-size:22px;font-weight:800;color:var(--ink);margin:6px 0 2px;}
+.budget-twd{font-size:13px;color:var(--teal);font-weight:600;margin-bottom:10px;}
+.budget-cats{display:flex;flex-wrap:wrap;gap:6px;}
+.budget-cat-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--paper);border:1px solid var(--border);border-radius:20px;font-size:11px;}
+.budget-cat-pill span{font-weight:600;color:var(--ink);}
+.budget-day-group{margin-bottom:16px;}
+.budget-day-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:6px;display:flex;justify-content:space-between;}
+.budget-item{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+.budget-item-icon{font-size:18px;flex-shrink:0;}
+.budget-item-body{flex:1;min-width:0;}
+.budget-item-main{display:flex;align-items:baseline;gap:6px;}
+.budget-item-amount{font-family:'Shippori Mincho',serif;font-size:16px;font-weight:700;}
+.budget-item-currency{font-size:11px;color:var(--muted);}
+.budget-item-twd{font-size:11px;color:var(--teal);}
+.budget-item-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;}
+.budget-item-actions{display:flex;gap:4px;flex-shrink:0;}
+
+.chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.chip{display:flex;align-items:center;gap:4px;background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;}
+.chip-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0;line-height:1;}
+.emoji-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.emoji-opt{font-size:24px;cursor:pointer;padding:4px;border-radius:6px;}
+.emoji-opt:active{background:var(--cream);}
+/* ITINERARY */
+.day-card{background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+.day-header{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--cream);border-bottom:1px solid var(--border);}
+.day-label{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:800;flex-shrink:0;}
+.day-date{font-size:11px;color:var(--muted);flex:1;}
+.day-note-wrap{flex:2;min-width:0;}
+.day-note{font-size:11px;color:var(--muted);cursor:pointer;padding:3px 8px;border:1px dashed transparent;border-radius:4px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.day-note:hover{border-color:var(--border);background:var(--white);}
+.day-note-input{font-size:11px;color:var(--ink);width:100%;padding:3px 8px;border:1px solid var(--rust);border-radius:4px;background:var(--white);font-family:'Noto Sans TC',sans-serif;outline:none;}
+.day-del{width:26px;height:26px;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;background:var(--paper);flex-shrink:0;}
+.day-del:active{background:#fef2f2;}
+.day-spots{padding:8px;}
+.day-spot-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--border);border-radius:6px;margin-bottom:5px;}
+.day-spot-num{width:20px;height:20px;border-radius:50%;background:var(--teal);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.day-spot-body{flex:1;min-width:0;}
+.day-spot-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.day-spot-cat{font-size:10px;color:var(--muted);}
+.day-spot-actions{display:flex;gap:4px;flex-shrink:0;}
+.day-spot-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;background:var(--white);}
+.day-spot-btn:active{background:var(--cream);}
+.day-empty{text-align:center;padding:14px;font-size:12px;color:var(--muted);font-style:italic;}
+.itin-pick-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--paper);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;}
+.itin-pick-item:active{background:var(--cream);}
+.itin-pick-item.in-day{opacity:.45;cursor:default;}
+.itin-pick-badge{font-size:10px;color:white;background:var(--teal);border-radius:3px;padding:1px 6px;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="header-tape"></div>
+<header>
+  <div class="header-stamp"><span class="stamp-big">旅</span><span>紀錄</span></div>
+  <div class="header-text">
+    <h1 id="headerTitle">🇯🇵 日本旅遊紀錄</h1>
+    <p id="headerSub">選擇旅程開始記錄</p>
+  </div>
+  <div class="header-right">
+    <span id="syncStatus"></span>
+    <div class="icon-btn" onclick="refreshData()">🔄</div>
+  </div>
+</header>
+
+<!-- TRIP LIST -->
+<div id="screen-trips" class="screen active">
+  <div class="trip-list-wrap">
+    <div class="section-title">📚 我的旅程</div>
+    <div class="section-sub">選擇旅程，或新增新的旅遊計劃</div>
+    <div class="trip-cards" id="tripCards"></div>
+    <button class="btn-add-trip" onclick="openNewTripModal()">＋ 新增旅程</button>
+  </div>
+</div>
+
+<!-- SHOPPING + SPOTS -->
+<div id="screen-shopping" class="screen">
+  <div class="tabs">
+    <div class="tab active" id="tab-btn-shopping" onclick="switchTab('shopping')">🛍 購物</div>
+    <div class="tab" id="tab-btn-spots" onclick="switchTab('spots')">📍 景點</div>
+    <div class="tab" id="tab-btn-itinerary" onclick="switchTab('itinerary')">🗓 行程</div>
+    <div class="tab" id="tab-btn-budget" onclick="switchTab('budget')">💰 記帳</div>
+    <div class="tab" id="tab-btn-add" onclick="switchTab('add')">✏️ 新增</div>
+    <div class="tab tab-back" onclick="goToTrips()">← 旅程</div>
+  </div>
+  <div class="main">
+
+    <!-- SHOPPING LIST -->
+    <div id="panel-shopping" class="panel active">
+      <div class="stats-bar" id="shopStatsBar"></div>
+      <div class="list-controls">
+        <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="shopFilter" placeholder="搜尋品牌、商品..." oninput="renderShop()"></div>
+        <div class="filter-btns">
+          <button class="filter-btn active" onclick="setShopFilter('all')">全部</button>
+          <button class="filter-btn" onclick="setShopFilter('未購買')">未購買</button>
+          <button class="filter-btn" onclick="setShopFilter('已購買')">已購買</button>
+          <button class="filter-btn" onclick="setShopFilter('食品')">食品</button>
+          <button class="filter-btn" onclick="setShopFilter('服飾')">服飾</button>
+          <button class="filter-btn" onclick="setShopFilter('美妝')">美妝</button>
+          <button class="filter-btn" onclick="setShopFilter('工藝品')">工藝品</button>
+          <button class="filter-btn" onclick="setShopFilter('紀念品')">紀念品</button>
+        </div>
+      </div>
+      <div class="items-grid" id="shopList"></div>
+    </div>
+
+    <!-- SPOTS LIST -->
+    <div id="panel-spots" class="panel">
+      <div class="stats-bar" id="spotStatsBar"></div>
+      <div class="list-controls">
+        <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="spotFilter" placeholder="搜尋景點..." oninput="renderSpots()"></div>
+        <div class="filter-btns">
+          <button class="filter-btn active" onclick="setSpotFilter('all')">全部</button>
+          <button class="filter-btn" onclick="setSpotFilter('未去')">未去</button>
+          <button class="filter-btn" onclick="setSpotFilter('已去')">已去</button>
+          <button class="filter-btn" onclick="setSpotFilter('自然')">自然</button>
+          <button class="filter-btn" onclick="setSpotFilter('歷史')">歷史</button>
+          <button class="filter-btn" onclick="setSpotFilter('美食')">美食</button>
+          <button class="filter-btn" onclick="setSpotFilter('購物街')">購物街</button>
+          <button class="filter-btn" onclick="setSpotFilter('體驗')">體驗</button>
+        </div>
+      </div>
+      <div class="items-grid" id="spotList"></div>
+    </div>
+
+    <!-- ITINERARY -->
+    <div id="panel-itinerary" class="panel">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button onclick="addDay()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--teal);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">＋ 新增天數</button>
+        <span style="font-size:11px;color:var(--muted)">從景點庫點「📅 加入行程」排入各天</span>
+      </div>
+      <div id="itineraryList"></div>
+    </div>
+
+    <!-- BUDGET -->
+    <div id="panel-budget" class="panel">
+      <!-- Summary card -->
+      <div id="budgetSummary" style="margin-bottom:12px"></div>
+      <!-- Rate bar -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--muted);flex-shrink:0">匯率 1 TWD =</span>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px">
+          <select id="rateFrom" onchange="updateRateDisplay()" style="flex:1;padding:6px 8px;font-size:13px">
+            <option value="JPY">JPY 日圓</option>
+            <option value="USD">USD 美元</option>
+            <option value="EUR">EUR 歐元</option>
+            <option value="KRW">KRW 韓圜</option>
+            <option value="HKD">HKD 港幣</option>
+          </select>
+          <input type="number" id="rateValue" placeholder="匯率" style="width:90px;padding:6px 8px;font-size:13px" onchange="saveCustomRate()">
+        </div>
+        <button onclick="fetchRate()" style="padding:6px 10px;border:1px solid var(--border);border-radius:5px;background:var(--paper);font-size:12px;cursor:pointer;flex-shrink:0">🔄 更新</button>
+        <span id="rateStatus" style="font-size:10px;color:var(--muted);width:100%"></span>
+      </div>
+      <!-- Filter -->
+      <div class="filter-btns" style="margin-bottom:10px">
+        <button class="filter-btn active" onclick="setBudgetFilter('all')">全部</button>
+        <button class="filter-btn" onclick="setBudgetFilter('餐飲')">🍜 餐飲</button>
+        <button class="filter-btn" onclick="setBudgetFilter('交通')">🚅 交通</button>
+        <button class="filter-btn" onclick="setBudgetFilter('住宿')">🏨 住宿</button>
+        <button class="filter-btn" onclick="setBudgetFilter('購物')">🛍 購物</button>
+        <button class="filter-btn" onclick="setBudgetFilter('門票')">🎟 門票</button>
+        <button class="filter-btn" onclick="setBudgetFilter('其他')">📦 其他</button>
+      </div>
+      <div id="budgetList"></div>
+    </div>
+
+    <!-- ADD PICKER -->
+    <div id="panel-add" class="panel">
+      <div class="add-picker">
+        <button class="add-pick-btn" onclick="switchTab('add-shop')">
+          <span class="add-pick-icon">🛍</span>
+          <div><div class="add-pick-label">新增購物商品</div><div class="add-pick-sub">記錄想買的東西、店家、預算</div></div>
+        </button>
+        <button class="add-pick-btn" onclick="switchTab('add-spot')">
+          <span class="add-pick-icon">📍</span>
+          <div><div class="add-pick-label">新增景點</div><div class="add-pick-sub">記錄想去的地方、地圖連結</div></div>
+        </button>
+        <button class="add-pick-btn" onclick="switchTab('add-budget')">
+          <span class="add-pick-icon">💰</span>
+          <div><div class="add-pick-label">新增記帳</div><div class="add-pick-sub">記錄每筆花費、自動換算台幣</div></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ADD BUDGET FORM -->
+    <div id="panel-add-budget" class="panel">
+      <div class="back-link" onclick="switchTab('add')">← 返回選擇</div>
+      <div class="form-card" style="--accent:var(--gold)">
+        <div class="form-card-accent" style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--rust));border-radius:8px 8px 0 0"></div>
+        <div class="form-title">💰 新增記帳</div>
+
+        <!-- Scan button -->
+        <input type="file" id="receiptFileInput" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptScan(event)">
+        <button onclick="document.getElementById('receiptFileInput').click()" style="width:100%;padding:12px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:14px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+          📷 拍照掃描收據（自動辨識）
+        </button>
+        <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px;text-align:center"></div>
+        <!-- Preview -->
+        <div id="receiptPreview" style="display:none;margin-bottom:12px;text-align:center">
+          <img id="receiptImg" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border)">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>金額 *</label>
+            <input type="number" id="bud-amount" placeholder="e.g. 1200" oninput="updateTWDPreview()">
+          </div>
+          <div class="form-group">
+            <label>幣別</label>
+            <div style="display:flex;gap:6px">
+              <select id="bud-currency" onchange="updateTWDPreview()" style="flex:1">
+                <option value="JPY">JPY</option>
+                <option value="TWD">TWD</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="KRW">KRW</option>
+                <option value="HKD">HKD</option>
+              </select>
+              <input type="text" id="bud-currency-custom" placeholder="自訂" style="width:60px;font-size:13px" oninput="syncCustomCurrency()" title="輸入自訂幣別代碼">
+            </div>
+          </div>
+        </div>
+        <div id="twdPreview" style="font-size:12px;color:var(--teal);margin-bottom:8px;min-height:18px"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>分類</label>
+            <select id="bud-cat">
+              <option value="餐飲">🍜 餐飲</option>
+              <option value="交通">🚅 交通</option>
+              <option value="住宿">🏨 住宿</option>
+              <option value="購物">🛍 購物</option>
+              <option value="門票">🎟 門票</option>
+              <option value="其他">📦 其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>地區</label>
+            <select id="bud-region"><option value="">不限</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>日期</label>
+          <input type="date" id="bud-date">
+        </div>
+        <div class="form-group">
+          <label>備註</label>
+          <input type="text" id="bud-note" placeholder="e.g. 午餐 拉麵">
+        </div>
+        <button class="btn" id="addBudgetBtn" onclick="addBudgetItem()" style="background:var(--gold);color:white;margin-top:8px">＋ 新增記帳</button>
+      </div>
+    </div>
+
+    <!-- ADD SHOP FORM -->
+    <div id="panel-add-shop" class="panel">
+      <div class="back-link" onclick="switchTab('add')">← 返回選擇</div>
+      <div class="form-card">
+        <div class="form-title">🛍 新增購物商品</div>
+        <div class="form-group"><label>商品名稱 *</label><input type="text" id="inp-name" placeholder="e.g. 帆布托特包"></div>
+        <div class="form-group"><label>品牌名稱</label><input type="text" id="inp-brand" placeholder="e.g. 岡山デニム"></div>
+        <div class="form-row">
+          <div class="form-group"><label>分類</label>
+            <select id="inp-cat">
+              <option value="食品">🍱 食品</option><option value="服飾">👕 服飾</option>
+              <option value="美妝">💄 美妝</option><option value="工藝品">🏺 工藝品</option>
+              <option value="紀念品">🎁 紀念品</option><option value="其他">📦 其他</option>
+            </select>
+          </div>
+          <div class="form-group"><label>地區</label><select id="inp-region"><option value="">不限</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>預算（日圓）</label><input type="number" id="inp-budget" placeholder="3000"></div>
+          <div class="form-group"><label>優先度</label>
+            <div class="priority-stars" id="priorityStars">
+              <div class="star" data-v="1" onclick="setPriority(1)">⭐</div>
+              <div class="star" data-v="2" onclick="setPriority(2)">⭐</div>
+              <div class="star" data-v="3" onclick="setPriority(3)">⭐</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group"><label>備註</label><textarea id="inp-note" placeholder="限定款、顏色偏好..."></textarea></div>
+        <div class="form-group">
+          <label>商品照片（拍照或截圖）</label>
+          <input type="file" id="shopPhotoInput" accept="image/*" style="display:none" onchange="uploadShopPhoto(event,'inp-photos')">
+          <div id="inp-photos-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+          <button type="button" onclick="document.getElementById('shopPhotoInput').click()" style="width:100%;padding:10px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
+            📷 新增照片
+          </button>
+          <div id="inp-photos-status" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:16px;text-align:center"></div>
+          <input type="hidden" id="inp-photos" value="[]">
+        </div>
+        <div class="form-group">
+          <label>店家 &amp; Maps 連結</label>
+          <div id="storeInputs"></div>
+          <button class="add-link-btn" onclick="addLinkInput('storeInputs')">＋ 新增店家</button>
+        </div>
+        <button class="btn btn-primary" id="addShopBtn" onclick="addShopItem()">＋ 新增到清單</button>
+      </div>
+    </div>
+
+    <!-- ADD SPOT FORM -->
+    <div id="panel-add-spot" class="panel">
+      <div class="back-link" onclick="switchTab('add')">← 返回選擇</div>
+      <div class="form-card teal">
+        <div class="form-title">📍 新增景點</div>
+        <div class="form-group"><label>景點名稱 *</label><input type="text" id="spot-name" placeholder="e.g. 倉敷美觀地區"></div>
+        <div class="form-row">
+          <div class="form-group"><label>類型</label>
+            <select id="spot-cat">
+              <option value="自然">🌿 自然</option><option value="歷史">🏯 歷史</option>
+              <option value="美食">🍜 美食</option><option value="購物街">🛍 購物街</option>
+              <option value="體驗">🎨 體驗</option><option value="其他">📌 其他</option>
+            </select>
+          </div>
+          <div class="form-group"><label>地區</label><select id="spot-region"><option value="">不限</option></select></div>
+        </div>
+        <div class="form-group"><label>優先度</label>
+          <div class="priority-stars" id="spotPriorityStars">
+            <div class="star" data-v="1" onclick="setSpotPriority(1)">⭐</div>
+            <div class="star" data-v="2" onclick="setSpotPriority(2)">⭐</div>
+            <div class="star" data-v="3" onclick="setSpotPriority(3)">⭐</div>
+          </div>
+        </div>
+        <div class="form-group"><label>備註 / 開放時間</label><textarea id="spot-note" placeholder="開放時間、注意事項..."></textarea></div>
+        <div class="form-group">
+          <label>地圖 &amp; 參考連結</label>
+          <div id="spotLinkInputs"></div>
+          <button class="add-link-btn" onclick="addLinkInput('spotLinkInputs')">＋ 新增連結</button>
+        </div>
+        <button class="btn btn-teal" id="addSpotBtn" onclick="addSpotItem()">＋ 新增景點</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: Edit Shop -->
+<div class="modal-backdrop" id="editShopBackdrop" onclick="closeModal('editShopBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>✏️ 編輯商品</h3>
+    <div class="form-group"><label>商品名稱 *</label><input type="text" id="es-name"></div>
+    <div class="form-group"><label>品牌</label><input type="text" id="es-brand"></div>
+    <div class="form-row">
+      <div class="form-group"><label>分類</label>
+        <select id="es-cat">
+          <option value="食品">🍱 食品</option><option value="服飾">👕 服飾</option>
+          <option value="美妝">💄 美妝</option><option value="工藝品">🏺 工藝品</option>
+          <option value="紀念品">🎁 紀念品</option><option value="其他">📦 其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>地區</label><select id="es-region"><option value="">不限</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>預算</label><input type="number" id="es-budget"></div>
+      <div class="form-group"><label>優先度</label>
+        <div class="priority-stars" id="esStars">
+          <div class="star" data-v="1" onclick="setESPriority(1)">⭐</div>
+          <div class="star" data-v="2" onclick="setESPriority(2)">⭐</div>
+          <div class="star" data-v="3" onclick="setESPriority(3)">⭐</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group"><label>備註</label><textarea id="es-note" style="min-height:50px"></textarea></div>
+    <div class="form-group"><label>店家 &amp; Maps</label><div id="esLinkInputs"></div><button class="add-link-btn" onclick="addLinkInput('esLinkInputs')">＋ 新增店家</button></div>
+    <div class="form-group">
+      <label>商品照片</label>
+      <input type="file" id="esPhotoInput" accept="image/*" style="display:none" onchange="uploadShopPhoto(event,'es-photos')">
+      <div id="es-photos-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+      <button type="button" onclick="document.getElementById('esPhotoInput').click()" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:12px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">📷 新增照片</button>
+      <div id="es-photos-status" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:16px;text-align:center"></div>
+      <input type="hidden" id="es-photos" value="[]">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('editShopBackdrop')">取消</button>
+      <button class="btn btn-primary" id="saveShopBtn" style="flex:2;margin-top:0" onclick="saveShopEdit()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit Spot -->
+<div class="modal-backdrop" id="editSpotBackdrop" onclick="closeModal('editSpotBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>✏️ 編輯景點</h3>
+    <div class="form-group"><label>景點名稱 *</label><input type="text" id="ep-name"></div>
+    <div class="form-row">
+      <div class="form-group"><label>類型</label>
+        <select id="ep-cat">
+          <option value="自然">🌿 自然</option><option value="歷史">🏯 歷史</option>
+          <option value="美食">🍜 美食</option><option value="購物街">🛍 購物街</option>
+          <option value="體驗">🎨 體驗</option><option value="其他">📌 其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>地區</label><select id="ep-region"><option value="">不限</option></select></div>
+    </div>
+    <div class="form-group"><label>優先度</label>
+      <div class="priority-stars" id="epStars">
+        <div class="star" data-v="1" onclick="setEPPriority(1)">⭐</div>
+        <div class="star" data-v="2" onclick="setEPPriority(2)">⭐</div>
+        <div class="star" data-v="3" onclick="setEPPriority(3)">⭐</div>
+      </div>
+    </div>
+    <div class="form-group"><label>備註</label><textarea id="ep-note" style="min-height:50px"></textarea></div>
+    <div class="form-group"><label>地圖 &amp; 連結</label><div id="epLinkInputs"></div><button class="add-link-btn" onclick="addLinkInput('epLinkInputs')">＋ 新增連結</button></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('editSpotBackdrop')">取消</button>
+      <button class="btn btn-teal" id="saveSpotBtn" style="flex:2;margin-top:0" onclick="saveSpotEdit()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit Budget -->
+<div class="modal-backdrop" id="editBudgetBackdrop" onclick="closeModal('editBudgetBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>✏️ 編輯記帳</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>金額 *</label>
+        <input type="number" id="eb-amount" oninput="updateEditTWDPreview()">
+      </div>
+      <div class="form-group">
+        <label>幣別</label>
+        <div style="display:flex;gap:6px">
+          <select id="eb-currency" onchange="updateEditTWDPreview()" style="flex:1">
+            <option value="JPY">JPY</option>
+            <option value="TWD">TWD</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="KRW">KRW</option>
+            <option value="HKD">HKD</option>
+          </select>
+          <input type="text" id="eb-currency-custom" placeholder="自訂" style="width:60px;font-size:13px" oninput="syncEditCustomCurrency()">
+        </div>
+      </div>
+    </div>
+    <div id="editTwdPreview" style="font-size:12px;color:var(--teal);margin-bottom:8px;min-height:18px"></div>
+    <div class="form-row">
+      <div class="form-group"><label>分類</label>
+        <select id="eb-cat">
+          <option value="餐飲">🍜 餐飲</option><option value="交通">🚅 交通</option>
+          <option value="住宿">🏨 住宿</option><option value="購物">🛍 購物</option>
+          <option value="門票">🎟 門票</option><option value="其他">📦 其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>地區</label><select id="eb-region"><option value="">不限</option></select></div>
+    </div>
+    <div class="form-group"><label>日期</label><input type="date" id="eb-date"></div>
+    <div class="form-group"><label>備註</label><input type="text" id="eb-note"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('editBudgetBackdrop')">取消</button>
+      <button class="btn" id="saveBudgetBtn" style="flex:2;margin-top:0;background:var(--gold);color:white" onclick="saveBudgetEdit()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add to Itinerary -->
+<div class="modal-backdrop" id="addToItinBackdrop" onclick="closeModal('addToItinBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>📅 加入行程</h3>
+    <p id="addToItinSpotName" style="font-size:13px;color:var(--muted);margin-bottom:14px;font-style:italic"></p>
+    <div id="addToItinDayList"></div>
+    <div style="margin-top:10px">
+      <button onclick="addDay();renderAddToItinDays()" style="width:100%;padding:10px;border:1px dashed var(--border);border-radius:6px;background:transparent;font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;">＋ 新增天數</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('addToItinBackdrop')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New Trip -->
+<div class="modal-backdrop" id="newTripBackdrop" onclick="closeModal('newTripBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>✈️ 新增旅程</h3>
+    <div class="form-group"><label>旅程名稱 *</label><input type="text" id="trip-name" placeholder="e.g. 岡山倉敷尾道 2026"></div>
+    <div class="form-group"><label>旅遊日期</label><input type="text" id="trip-date" placeholder="e.g. 2026/05/20 ~ 05/25"></div>
+    <div class="form-group">
+      <label>地點（輸入後按加入）</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="trip-region-input" placeholder="e.g. 岡山" style="flex:1" onkeydown="if(event.key==='Enter'){addRegionChip();event.preventDefault()}">
+        <button class="btn btn-secondary" style="width:60px;margin-top:0;padding:0;flex-shrink:0" onclick="addRegionChip()">加入</button>
+      </div>
+      <div class="chips-wrap" id="newTripRegions"></div>
+    </div>
+    <div class="form-group">
+      <label>圖示</label>
+      <div class="emoji-grid" id="emojiPicker"></div>
+      <input type="text" id="trip-icon" value="🗾" style="width:60px;margin-top:8px;text-align:center;font-size:20px">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('newTripBackdrop')">取消</button>
+      <button class="btn btn-primary" id="saveTripBtn" style="flex:2;margin-top:0" onclick="saveNewTrip()">✈️ 建立旅程</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzn-Bs-C2yam51V58gB_XvzcOtx8l9mvim2dl96uXvuwXIFj5JNTIlJ8nsTkDzHjBYXFg/exec';
+const TRIPS_SHEET = 'Trips';
+const SHOP_COLS   = ['id','brand','name','category','budget','priority','region','note','purchased','links','photos','createdAt'];
+const SPOT_COLS   = ['id','name','category','region','priority','note','visited','links','createdAt'];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let trips=[],currentTrip=null;
+let shopItems=[],shopRowMap={};
+let spotItems=[],spotRowMap={};
+let newTripRegions=[];
+let shopPriority=0,spotPriority=0,esPriority=0,epPriority=0;
+let editShopId=null,editSpotId=null;
+let shopFilter='all',spotFilter='all';
+let isBusy=false;
+let linkCounter=0;
+
+const shopCatMap={'食品':'cat-food','服飾':'cat-fashion','美妝':'cat-cosmetic','工藝品':'cat-crafts','紀念品':'cat-souvenir','其他':'cat-other'};
+const spotCatMap={'自然':'cat-nature','歷史':'cat-history','美食':'cat-food-spot','購物街':'cat-shopping-area','體驗':'cat-experience','其他':'cat-spot-other'};
+
+// ══════════════════════════════════════════
+// CACHE
+// ══════════════════════════════════════════
+const CK_TRIPS='jp2_trips';
+const ck_shop=id=>`jp2_shop_${id}`;
+const ck_spot=id=>`jp2_spot_${id}`;
+function saveCache(key,data,extra={}){try{localStorage.setItem(key,JSON.stringify({ts:Date.now(),data,...extra}));}catch(e){}}
+function loadCache(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}}
+function clearCache(key){try{localStorage.removeItem(key);}catch(e){}}
+
+// ══════════════════════════════════════════
+// SYNC STATUS
+// ══════════════════════════════════════════
+function showSync(msg,color='var(--muted)'){const el=document.getElementById('syncStatus');if(el){el.textContent=msg;el.style.color=color;}}
+function setBusy(v,btnId){isBusy=v;if(btnId){const b=document.getElementById(btnId);if(b)b.disabled=v;}}
+
+// ══════════════════════════════════════════
+// APPS SCRIPT
+// ══════════════════════════════════════════
+async function gasCall(body){
+  const r=await fetch(GAS_URL,{method:'POST',body:JSON.stringify(body)});
+  const t=await r.text();
+  let d;try{d=JSON.parse(t);}catch{throw new Error('回應錯誤');}
+  if(d.error)throw new Error(d.error);
+  return d;
+}
+const gsGet=sheet=>gasCall({action:'getRows',sheet});
+const gsAppend=(sheet,row)=>gasCall({action:'appendRow',sheet,row});
+const gsUpdate=(sheet,rowNum,values)=>gasCall({action:'updateRow',sheet,row:rowNum,values});
+const gsDel=(sheet,rowNum)=>gasCall({action:'deleteRow',sheet,row:rowNum});
+const gsEnsure=(sheet,header)=>gasCall({action:'ensureSheet',sheet,header});
+const gsDelSheet=sheet=>gasCall({action:'deleteSheet',sheet});
+
+// ══════════════════════════════════════════
+// CONVERTERS
+// ══════════════════════════════════════════
+function safeJSON(s,fb){try{return JSON.parse(s||'');}catch{return fb;}}
+function tripToRow(t){return[t.id,t.name,t.date||'',t.icon||'🗾',JSON.stringify(t.regions||[])];}
+function rowToTrip(r){return{id:r[0],name:r[1]||'',date:r[2]||'',icon:r[3]||'🗾',regions:safeJSON(r[4],[])};}
+function shopToRow(item){return SHOP_COLS.map(k=>{if(k==='links'||k==='photos')return JSON.stringify(item[k]||[]);if(k==='purchased')return item.purchased?'1':'0';return item[k]??'';});}
+function rowToShop(row){const i={};SHOP_COLS.forEach((k,n)=>{if(k==='links'||k==='photos')i[k]=safeJSON(row[n],[]);else if(k==='purchased')i[k]=row[n]==='1';else if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});return i;}
+function spotToRow(item){return SPOT_COLS.map(k=>{if(k==='links')return JSON.stringify(item.links||[]);if(k==='visited')return item.visited?'1':'0';return item[k]??'';});}
+function rowToSpot(row){const i={};SPOT_COLS.forEach((k,n)=>{if(k==='links')i[k]=safeJSON(row[n],[]);else if(k==='visited')i[k]=row[n]==='1';else if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});return i;}
+
+// ══════════════════════════════════════════
+// TRIPS
+// ══════════════════════════════════════════
+async function loadTrips(force=false){
+  if(!force){const c=loadCache(CK_TRIPS);if(c){trips=c.data;renderTripList();showSync('🔄 同步...','var(--muted)');_fetchTrips().catch(()=>showSync('⚠️ 離線','var(--gold)'));return;}}
+  showSync('⟳ 載入...','var(--muted)');await _fetchTrips();
+}
+async function _fetchTrips(){
+  try{
+    await gsEnsure(TRIPS_SHEET,['id','name','date','icon','regions']);
+    const rows=await gsGet(TRIPS_SHEET);
+    trips=rows.slice(1).filter(r=>r&&r[0]).map(rowToTrip);
+    saveCache(CK_TRIPS,trips);
+    renderTripList();showSync('','');
+  }catch(e){showSync('❌ 連線失敗','var(--red)');console.error(e);}
+}
+
+function renderTripList(){
+  const el=document.getElementById('tripCards');
+  if(!trips.length){el.innerHTML=`<div class="empty-state"><div class="emoji">✈️</div><p>還沒有旅程，點下方新增！</p></div>`;return;}
+  el.innerHTML=trips.map(t=>`
+    <div class="trip-card" onclick="selectTrip('${t.id}')">
+      <div class="trip-icon">${t.icon}</div>
+      <div class="trip-body">
+        <div class="trip-name">${t.name}</div>
+        <div class="trip-regions">${(t.regions||[]).map(r=>`<span class="trip-region-tag">${r}</span>`).join('')}</div>
+        ${t.date?`<div class="trip-date">📅 ${t.date}</div>`:''}
+      </div>
+      <div class="trip-del" onclick="event.stopPropagation();deleteTrip('${t.id}')">🗑</div>
+    </div>`).join('');
+}
+
+async function saveNewTrip(){
+  if(isBusy)return;
+  const name=document.getElementById('trip-name').value.trim();
+  if(!name){alert('請輸入旅程名稱');return;}
+  const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions]};
+  setBusy(true,'saveTripBtn');showSync('⟳ 建立...','var(--muted)');
+  try{
+    await gsAppend(TRIPS_SHEET,tripToRow(trip));
+    await gsEnsure(trip.id,SHOP_COLS);
+    await gsEnsure(trip.id+'_spots',SPOT_COLS);
+    await gsEnsure(trip.id+'_budget',BUDGET_COLS);
+    await gsEnsure(trip.id+'_itinerary',ITIN_COLS);
+    trips.push(trip);saveCache(CK_TRIPS,trips);
+    closeModal('newTripBackdrop');renderTripList();
+    showSync('✅ 已建立','var(--sage)');
+    setTimeout(()=>selectTrip(trip.id),200);
+  }catch(e){showSync('❌ '+e.message,'var(--red)');alert('建立失敗：'+e.message);}
+  setBusy(false,'saveTripBtn');
+}
+
+async function deleteTrip(id){
+  const t=trips.find(x=>x.id===id);
+  if(!confirm(`刪除旅程「${t?.name}」？\n所有購物和景點記錄也會刪除。`))return;
+  if(isBusy)return;setBusy(true);showSync('⟳ 刪除...','var(--muted)');
+  try{
+    const rows=await gsGet(TRIPS_SHEET);
+    const idx=rows.findIndex((r,i)=>i>0&&r[0]===id);
+    if(idx>0)await gsDel(TRIPS_SHEET,idx+1);
+    await gsDelSheet(id).catch(()=>{});
+    await gsDelSheet(id+'_spots').catch(()=>{});
+    await gsDelSheet(id+'_budget').catch(()=>{});
+    await gsDelSheet(id+'_itinerary').catch(()=>{});
+    clearCache(ck_shop(id));clearCache(ck_spot(id));
+    clearCache('jp2_budget_'+id);clearCache('jp2_itin_'+id);
+    trips=trips.filter(x=>x.id!==id);saveCache(CK_TRIPS,trips);
+    renderTripList();showSync('✅ 已刪除','var(--sage)');
+  }catch(e){showSync('❌ '+e.message,'var(--red)');}
+  setBusy(false);
+}
+
+async function selectTrip(id){
+  currentTrip=trips.find(t=>t.id===id);if(!currentTrip)return;
+  document.getElementById('headerTitle').textContent=`${currentTrip.icon} ${currentTrip.name}`;
+  document.getElementById('headerSub').textContent=(currentTrip.regions||[]).join('・')||'旅遊紀錄';
+  const opts=`<option value="">不限</option>${(currentTrip.regions||[]).map(r=>`<option value="${r}">${r}</option>`).join('')}`;
+  ['inp-region','es-region','ep-region','spot-region','bud-region','eb-region'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  document.getElementById('screen-trips').classList.remove('active');
+  document.getElementById('screen-shopping').classList.add('active');
+  switchTab('shopping');
+  loadRates();
+  document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
+  await loadShopItems();
+  await loadSpotItems();
+  await loadBudgetItems();
+  await loadItinerary();
+}
+
+function goToTrips(){
+  currentTrip=null;shopItems=[];spotItems=[];
+  document.getElementById('screen-shopping').classList.remove('active');
+  document.getElementById('screen-trips').classList.add('active');
+  document.getElementById('headerTitle').textContent='🇯🇵 日本旅遊紀錄';
+  document.getElementById('headerSub').textContent='選擇旅程開始記錄';
+}
+
+// ══════════════════════════════════════════
+// SHOP ITEMS
+// ══════════════════════════════════════════
+async function loadShopItems(force=false){
+  if(!currentTrip)return;
+  if(!force){const c=loadCache(ck_shop(currentTrip.id));if(c){shopItems=c.data;shopRowMap=c.rowMap||{};renderShop();showSync('🔄 同步...','var(--muted)');_fetchShop().catch(()=>showSync('⚠️ 離線','var(--gold)'));return;}}
+  showSync('⟳ 載入...','var(--muted)');await _fetchShop();
+}
+async function _fetchShop(){
+  if(!currentTrip)return;
+  try{
+    await gsEnsure(currentTrip.id,SHOP_COLS);
+    const rows=await gsGet(currentTrip.id);
+    shopRowMap={};shopItems=[];
+    for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToShop(r);if(item.id){shopItems.push(item);shopRowMap[item.id]=i+1;}}
+    saveCache(ck_shop(currentTrip.id),shopItems,{rowMap:shopRowMap});
+    showSync(`✅ ${shopItems.length}件`,'var(--sage)');renderShop();
+  }catch(e){showSync('❌ '+e.message,'var(--red)');}
+}
+
+async function addShopItem(){
+  if(isBusy)return;
+  const name=document.getElementById('inp-name').value.trim();
+  if(!name){alert('請填寫商品名稱');return;}
+  const item={id:Date.now(),brand:document.getElementById('inp-brand').value.trim(),name,category:document.getElementById('inp-cat').value,budget:document.getElementById('inp-budget').value,priority:shopPriority,region:document.getElementById('inp-region').value,note:document.getElementById('inp-note').value.trim(),purchased:false,links:collectLinks('storeInputs'),photos:safeJSON(document.getElementById('inp-photos').value,[]),createdAt:new Date().toLocaleDateString('zh-TW')};
+  setBusy(true,'addShopBtn');showSync('⟳ 儲存...','var(--muted)');
+  try{
+    await gsAppend(currentTrip.id,shopToRow(item));
+    shopItems.unshift(item);
+    clearShopForm();switchTab('shopping');renderShop();
+    showSync('✅ 已新增','var(--sage)');
+    await _fetchShop();
+  }catch(e){showSync('❌ '+e.message,'var(--red)');alert('新增失敗：'+e.message);}
+  setBusy(false,'addShopBtn');
+}
+
+async function togglePurchased(id){
+  const item=shopItems.find(i=>i.id===id);if(!item)return;
+  item.purchased=!item.purchased;renderShop();
+  const row=shopRowMap[item.id];
+  if(row){try{await gsUpdate(currentTrip.id,row,shopToRow(item));saveCache(ck_shop(currentTrip.id),shopItems,{rowMap:shopRowMap});showSync('✅','var(--sage)');}catch(e){showSync('❌ '+e.message,'var(--red)');item.purchased=!item.purchased;renderShop();}}
+}
+
+async function deleteShopItem(id){
+  if(isBusy)return;if(!confirm('確認刪除此商品？'))return;
+  setBusy(true);const row=shopRowMap[id];
+  shopItems=shopItems.filter(i=>i.id!==id);renderShop();showSync('⟳ 刪除...','var(--muted)');
+  try{if(row)await gsDel(currentTrip.id,row);showSync('✅ 已刪除','var(--sage)');await _fetchShop();}
+  catch(e){showSync('❌ '+e.message,'var(--red)');}
+  setBusy(false);
+}
+
+function openEditShop(id){
+  const item=shopItems.find(i=>i.id===id);if(!item)return;
+  editShopId=id;
+  document.getElementById('es-name').value=item.name||'';
+  document.getElementById('es-brand').value=item.brand||'';
+  document.getElementById('es-cat').value=item.category||'食品';
+  document.getElementById('es-budget').value=item.budget||'';
+  document.getElementById('es-region').value=item.region||'';
+  document.getElementById('es-note').value=item.note||'';
+  esPriority=item.priority||0;
+  document.querySelectorAll('#esStars .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.v)<=esPriority));
+  const c=document.getElementById('esLinkInputs');c.innerHTML='';linkCounter=0;
+  (item.links||[]).forEach(l=>addLinkInput('esLinkInputs',l));
+  // Load photos
+  const photos = item.photos||[];
+  document.getElementById('es-photos').value = JSON.stringify(photos);
+  renderPhotoPreview(document.getElementById('es-photos-preview'), photos, 'es-photos');
+  document.getElementById('es-photos-status').textContent='';
+  document.getElementById('editShopBackdrop').classList.add('open');
+}
+
+async function saveShopEdit(){
+  if(isBusy)return;
+  const item=shopItems.find(i=>i.id===editShopId);if(!item)return;
+  const name=document.getElementById('es-name').value.trim();if(!name){alert('商品名稱不能為空');return;}
+  item.brand=document.getElementById('es-brand').value.trim();item.name=name;item.category=document.getElementById('es-cat').value;item.budget=document.getElementById('es-budget').value;item.priority=esPriority;item.region=document.getElementById('es-region').value;item.note=document.getElementById('es-note').value.trim();item.links=collectLinks('esLinkInputs');item.photos=safeJSON(document.getElementById('es-photos').value,[]);
+  closeModal('editShopBackdrop');renderShop();
+  setBusy(true,'saveShopBtn');showSync('⟳ 儲存...','var(--muted)');
+  const row=shopRowMap[item.id];
+  if(row){try{await gsUpdate(currentTrip.id,row,shopToRow(item));saveCache(ck_shop(currentTrip.id),shopItems,{rowMap:shopRowMap});showSync('✅ 已儲存','var(--sage)');}catch(e){showSync('❌ '+e.message,'var(--red)');}}
+  setBusy(false,'saveShopBtn');
+}
+
+// ══════════════════════════════════════════
+// SPOT ITEMS
+// ══════════════════════════════════════════
+async function loadSpotItems(force=false){
+  if(!currentTrip)return;
+  if(!force){const c=loadCache(ck_spot(currentTrip.id));if(c){spotItems=c.data;spotRowMap=c.rowMap||{};renderSpots();showSync('🔄 同步...','var(--muted)');_fetchSpot().catch(()=>showSync('⚠️ 離線','var(--gold)'));return;}}
+  await _fetchSpot();
+}
+async function _fetchSpot(){
+  if(!currentTrip)return;
+  try{
+    await gsEnsure(currentTrip.id+'_spots',SPOT_COLS);
+    const rows=await gsGet(currentTrip.id+'_spots');
+    spotRowMap={};spotItems=[];
+    for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToSpot(r);if(item.id){spotItems.push(item);spotRowMap[item.id]=i+1;}}
+    saveCache(ck_spot(currentTrip.id),spotItems,{rowMap:spotRowMap});
+    renderSpots();
+  }catch(e){showSync('❌ '+e.message,'var(--red)');}
+}
+
+async function addSpotItem(){
+  if(isBusy)return;
+  const name=document.getElementById('spot-name').value.trim();if(!name){alert('請填寫景點名稱');return;}
+  const item={id:Date.now(),name,category:document.getElementById('spot-cat').value,region:document.getElementById('spot-region').value,priority:spotPriority,note:document.getElementById('spot-note').value.trim(),visited:false,links:collectLinks('spotLinkInputs'),createdAt:new Date().toLocaleDateString('zh-TW')};
+  setBusy(true,'addSpotBtn');showSync('⟳ 儲存...','var(--muted)');
+  try{
+    await gsAppend(currentTrip.id+'_spots',spotToRow(item));
+    spotItems.unshift(item);
+    clearSpotForm();switchTab('spots');renderSpots();
+    showSync('✅ 已新增','var(--sage)');
+    await _fetchSpot();
+  }catch(e){showSync('❌ '+e.message,'var(--red)');alert('新增失敗：'+e.message);}
+  setBusy(false,'addSpotBtn');
+}
+
+async function toggleVisited(id){
+  const item=spotItems.find(i=>i.id===id);if(!item)return;
+  item.visited=!item.visited;renderSpots();
+  const row=spotRowMap[item.id];
+  if(row){try{await gsUpdate(currentTrip.id+'_spots',row,spotToRow(item));saveCache(ck_spot(currentTrip.id),spotItems,{rowMap:spotRowMap});showSync('✅','var(--sage)');}catch(e){showSync('❌ '+e.message,'var(--red)');item.visited=!item.visited;renderSpots();}}
+}
+
+async function deleteSpotItem(id){
+  if(isBusy)return;if(!confirm('確認刪除此景點？'))return;
+  setBusy(true);const row=spotRowMap[id];
+  spotItems=spotItems.filter(i=>i.id!==id);renderSpots();showSync('⟳ 刪除...','var(--muted)');
+  try{if(row)await gsDel(currentTrip.id+'_spots',row);showSync('✅ 已刪除','var(--sage)');await _fetchSpot();}
+  catch(e){showSync('❌ '+e.message,'var(--red)');}
+  setBusy(false);
+}
+
+function openEditSpot(id){
+  const item=spotItems.find(i=>i.id===id);if(!item)return;
+  editSpotId=id;
+  document.getElementById('ep-name').value=item.name||'';
+  document.getElementById('ep-cat').value=item.category||'自然';
+  document.getElementById('ep-region').value=item.region||'';
+  document.getElementById('ep-note').value=item.note||'';
+  epPriority=item.priority||0;
+  document.querySelectorAll('#epStars .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.v)<=epPriority));
+  const c=document.getElementById('epLinkInputs');c.innerHTML='';linkCounter=0;
+  (item.links||[]).forEach(l=>addLinkInput('epLinkInputs',l));
+  document.getElementById('editSpotBackdrop').classList.add('open');
+}
+
+async function saveSpotEdit(){
+  if(isBusy)return;
+  const item=spotItems.find(i=>i.id===editSpotId);if(!item)return;
+  const name=document.getElementById('ep-name').value.trim();if(!name){alert('景點名稱不能為空');return;}
+  item.name=name;item.category=document.getElementById('ep-cat').value;item.region=document.getElementById('ep-region').value;item.priority=epPriority;item.note=document.getElementById('ep-note').value.trim();item.links=collectLinks('epLinkInputs');
+  closeModal('editSpotBackdrop');renderSpots();
+  setBusy(true,'saveSpotBtn');showSync('⟳ 儲存...','var(--muted)');
+  const row=spotRowMap[item.id];
+  if(row){try{await gsUpdate(currentTrip.id+'_spots',row,spotToRow(item));saveCache(ck_spot(currentTrip.id),spotItems,{rowMap:spotRowMap});showSync('✅ 已儲存','var(--sage)');}catch(e){showSync('❌ '+e.message,'var(--red)');}}
+  setBusy(false,'saveSpotBtn');
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function renderShop(){
+  const q=(document.getElementById('shopFilter')?.value||'').toLowerCase();
+  let f=shopItems.filter(item=>{
+    const mQ=!q||item.name.toLowerCase().includes(q)||(item.brand||'').toLowerCase().includes(q);
+    let mF=true;
+    if(shopFilter==='未購買')mF=!item.purchased;else if(shopFilter==='已購買')mF=item.purchased;else if(shopFilter!=='all')mF=item.category===shopFilter;
+    return mQ&&mF;
+  });
+  const total=shopItems.length,done=shopItems.filter(i=>i.purchased).length;
+  document.getElementById('shopStatsBar').innerHTML=`<div class="stat-pill">共<strong>${total}</strong>件</div><div class="stat-pill">✅<strong>${done}</strong></div><div class="stat-pill">🛒<strong>${total-done}</strong></div>`;
+  const el=document.getElementById('shopList');
+  if(!f.length){el.innerHTML=`<div class="empty-state"><div class="emoji">🛍</div><p>${shopItems.length?'沒有符合條件的商品':'清單是空的，點「新增」開始記錄！'}</p></div>`;return;}
+  el.innerHTML=f.map(item=>{
+    const stars=item.priority?'⭐'.repeat(item.priority):'';
+    const catCls=shopCatMap[item.category]||'cat-other';
+    const links=(item.links||[]).filter(l=>l.name||l.url);
+    const photos=(item.photos||[]);
+    const searchQ=encodeURIComponent((item.brand?item.brand+' ':'')+item.name);
+    const photosHtml = photos.length ? `
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        ${photos.map(url=>`<img src="${url}" style="width:64px;height:64px;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer" onclick="openPhotoViewer('${url}')">`).join('')}
+      </div>` : '';
+    const linksHtml=`<div class="links-section"><div class="links-label">📍 店家</div>
+      ${links.map(l=>`<a class="link-row" href="${l.url||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.name)}" target="_blank" rel="noopener"><span>🗺</span><span class="link-row-name">${l.name||'查看地圖'}</span><span class="link-row-arrow">↗</span></a>`).join('')}
+      <a class="link-row search-link" href="https://www.google.com/search?q=${searchQ}+どこで買える+店" target="_blank" rel="noopener"><span>🔍</span><span class="link-row-name">Google 搜尋哪裡買</span><span class="link-row-arrow">↗</span></a>
+    </div>`;
+    return `<div class="item-card ${item.purchased?'purchased':''}">
+      <div class="item-row1">
+        <div class="item-check" onclick="togglePurchased(${item.id})">${item.purchased?'✓':''}</div>
+        <div class="item-content">
+          <div class="item-top"><span class="cat-badge ${catCls}">${item.category}</span><span class="item-name">${item.name}</span></div>
+          ${item.brand?`<div class="item-brand">${item.brand}</div>`:''}
+          <div class="item-meta">
+            ${item.region?`<span>📍${item.region}</span>`:''}
+            ${item.budget?`<span>💴¥${parseInt(item.budget).toLocaleString()}</span>`:''}
+            ${stars?`<span>${stars}</span>`:''}
+            <span style="margin-left:auto;opacity:.5">${item.createdAt}</span>
+          </div>
+          ${item.note?`<div class="item-note">${item.note}</div>`:''}
+          ${photosHtml}
+          ${linksHtml}
+        </div>
+        <div class="item-actions">
+          <div class="act-btn" onclick="openEditShop(${item.id})">✏️</div>
+          <div class="act-btn danger" onclick="deleteShopItem(${item.id})">🗑</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSpots(){
+  const q=(document.getElementById('spotFilter')?.value||'').toLowerCase();
+  let f=spotItems.filter(item=>{
+    const mQ=!q||item.name.toLowerCase().includes(q);
+    let mF=true;
+    if(spotFilter==='未去')mF=!item.visited;else if(spotFilter==='已去')mF=item.visited;else if(spotFilter!=='all')mF=item.category===spotFilter;
+    return mQ&&mF;
+  });
+  const total=spotItems.length,done=spotItems.filter(i=>i.visited).length;
+  document.getElementById('spotStatsBar').innerHTML=`<div class="stat-pill">共<strong>${total}</strong>個</div><div class="stat-pill">✅已去<strong>${done}</strong></div><div class="stat-pill">📍待去<strong>${total-done}</strong></div>`;
+  const el=document.getElementById('spotList');
+  if(!f.length){el.innerHTML=`<div class="empty-state"><div class="emoji">📍</div><p>${spotItems.length?'沒有符合條件的景點':'還沒有景點，點「新增」開始記錄！'}</p></div>`;return;}
+  el.innerHTML=f.map(item=>{
+    const stars=item.priority?'⭐'.repeat(item.priority):'';
+    const catCls=spotCatMap[item.category]||'cat-spot-other';
+    const links=(item.links||[]).filter(l=>l.name||l.url);
+    const searchQ=encodeURIComponent(item.name+(item.region?' '+item.region:''));
+    const linksHtml=`<div class="links-section"><div class="links-label">🗺 地圖 &amp; 連結</div>
+      ${links.map(l=>`<a class="link-row" href="${l.url||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.name||item.name)}" target="_blank" rel="noopener"><span>🗺</span><span class="link-row-name">${l.name||'查看地圖'}</span><span class="link-row-arrow">↗</span></a>`).join('')}
+      <a class="link-row search-link" href="https://www.google.com/search?q=${searchQ}" target="_blank" rel="noopener"><span>🔍</span><span class="link-row-name">Google 搜尋景點資訊</span><span class="link-row-arrow">↗</span></a>
+    </div>`;
+    return `<div class="item-card ${item.visited?'visited':''}">
+      <div class="item-row1">
+        <div class="item-check" onclick="toggleVisited(${item.id})">${item.visited?'✓':''}</div>
+        <div class="item-content">
+          <div class="item-top"><span class="cat-badge ${catCls}">${item.category}</span><span class="item-name">${item.name}</span></div>
+          <div class="item-meta">
+            ${item.region?`<span>📍${item.region}</span>`:''}
+            ${stars?`<span>${stars}</span>`:''}
+            <span style="margin-left:auto;opacity:.5">${item.createdAt}</span>
+          </div>
+          ${item.note?`<div class="item-note">${item.note}</div>`:''}
+          ${linksHtml}
+        </div>
+        <div class="item-actions">
+          <div class="act-btn" title="加入行程" onclick="openAddToItinerary(${item.id})">📅</div>
+          <div class="act-btn" onclick="openEditSpot(${item.id})">✏️</div>
+          <div class="act-btn danger" onclick="deleteSpotItem(${item.id})">🗑</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════
+function switchTab(tab){
+  ['shopping','spots','itinerary','budget','add','add-shop','add-spot','add-budget'].forEach(t=>{
+    document.getElementById('panel-'+t)?.classList.remove('active');
+  });
+  document.getElementById('panel-'+tab)?.classList.add('active');
+  ['shopping','spots','itinerary','budget','add'].forEach(t=>{
+    document.getElementById('tab-btn-'+t)?.classList.remove('active');
+  });
+  if(['shopping','spots','itinerary','budget','add'].includes(tab))document.getElementById('tab-btn-'+tab)?.classList.add('active');
+  if(['add-shop','add-spot','add-budget'].includes(tab))document.getElementById('tab-btn-add')?.classList.add('active');
+}
+
+function setShopFilter(f){
+  shopFilter=f;
+  document.querySelectorAll('#panel-shopping .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
+  renderShop();
+}
+function setSpotFilter(f){
+  spotFilter=f;
+  document.querySelectorAll('#panel-spots .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
+  renderSpots();
+}
+
+function setPriority(v){shopPriority=v;document.querySelectorAll('#priorityStars .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.v)<=v));}
+function setSpotPriority(v){spotPriority=v;document.querySelectorAll('#spotPriorityStars .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.v)<=v));}
+function setESPriority(v){esPriority=v;document.querySelectorAll('#esStars .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.v)<=v));}
+function setEPPriority(v){epPriority=v;document.querySelectorAll('#epStars .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.v)<=v));}
+
+function clearShopForm(){
+  ['inp-name','inp-brand','inp-budget','inp-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('inp-cat').value='食品';document.getElementById('inp-region').value='';
+  shopPriority=0;document.querySelectorAll('#priorityStars .star').forEach(s=>s.classList.remove('active'));
+  document.getElementById('storeInputs').innerHTML='';
+  document.getElementById('inp-photos').value='[]';
+  document.getElementById('inp-photos-preview').innerHTML='';
+  document.getElementById('inp-photos-status').textContent='';
+  linkCounter=0;
+}
+function clearSpotForm(){
+  ['spot-name','spot-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('spot-cat').value='自然';document.getElementById('spot-region').value='';
+  spotPriority=0;document.querySelectorAll('#spotPriorityStars .star').forEach(s=>s.classList.remove('active'));
+  document.getElementById('spotLinkInputs').innerHTML='';linkCounter=0;
+}
+
+// LINK INPUTS
+function addLinkInput(containerId,link){
+  const c=document.getElementById(containerId);const idx=linkCounter++;
+  const div=document.createElement('div');
+  div.id=`li_${containerId}_${idx}`;div.className='link-input-wrap';
+  div.innerHTML=`<div class="link-input-row"><div>
+    <input type="text" placeholder="名稱 e.g. 天滿屋岡山店" value="${link?.name||''}" data-field="name" style="margin-bottom:4px">
+    <input type="url" placeholder="Maps 或網頁連結" value="${link?.url||''}" data-field="url">
+  </div><button class="link-del-btn" onclick="document.getElementById('li_${containerId}_${idx}').remove()">×</button></div>`;
+  c.appendChild(div);
+}
+function collectLinks(containerId){
+  const links=[];
+  document.querySelectorAll(`#${containerId} .link-input-wrap`).forEach(row=>{
+    const name=row.querySelector('[data-field="name"]')?.value.trim();
+    const url=row.querySelector('[data-field="url"]')?.value.trim();
+    if(name||url)links.push({name:name||'',url:url||''});
+  });
+  return links;
+}
+
+function closeModal(id,e){
+  if(!e||e.target===document.getElementById(id))document.getElementById(id)?.classList.remove('open');
+}
+
+async function refreshData(){
+  if(currentTrip){
+    clearCache(ck_shop(currentTrip.id));clearCache(ck_spot(currentTrip.id));
+    clearCache('jp2_budget_'+currentTrip.id);clearCache('jp2_itin_'+currentTrip.id);
+    await loadShopItems(true);await loadSpotItems(true);
+    await loadBudgetItems(true);await loadItinerary(true);
+  }else{clearCache(CK_TRIPS);await loadTrips(true);}
+}
+
+// NEW TRIP MODAL
+function openNewTripModal(){
+  newTripRegions=[];
+  ['trip-name','trip-date'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('trip-icon').value='🗾';
+  document.getElementById('trip-region-input').value='';
+  renderRegionChips();
+  const ep=document.getElementById('emojiPicker');ep.innerHTML='';
+  '🗾 🏯 ⛩️ 🌸 🍱 🛍️ 🎌 🚅 🌊 🏔️ 🎋 🍜 🍣 🎎 🏮'.split(' ').forEach(e=>{
+    const s=document.createElement('span');s.textContent=e;s.className='emoji-opt';
+    s.onclick=()=>document.getElementById('trip-icon').value=e;ep.appendChild(s);
+  });
+  document.getElementById('newTripBackdrop').classList.add('open');
+}
+function addRegionChip(){
+  const val=document.getElementById('trip-region-input').value.trim();
+  if(!val||newTripRegions.includes(val))return;
+  newTripRegions.push(val);document.getElementById('trip-region-input').value='';renderRegionChips();
+}
+function removeRegionChip(r){newTripRegions=newTripRegions.filter(x=>x!==r);renderRegionChips();}
+function renderRegionChips(){
+  document.getElementById('newTripRegions').innerHTML=newTripRegions.map(r=>`<div class="chip">${r}<button class="chip-del" onclick="removeRegionChip('${r}')">×</button></div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// BUDGET
+// ══════════════════════════════════════════
+const BUDGET_COLS = ['id','amount','currency','category','region','date','note','createdAt'];
+let budgetItems=[], budgetRowMap={}, budgetFilter='all';
+let editBudgetId=null;
+let rates={}; // { JPY: 4.45, USD: 0.031, ... } (1 TWD = X 幣別)
+const CK_RATES='jp2_rates';
+const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','其他':'📦'};
+
+function budgetToRow(item){return BUDGET_COLS.map(k=>item[k]??'');}
+function rowToBudget(row){const i={};BUDGET_COLS.forEach((k,n)=>{if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});return i;}
+
+// Rates
+async function fetchRate(silent=false){
+  if(!silent)document.getElementById('rateStatus').textContent='⟳ 抓取匯率...';
+  try{
+    const r=await fetch('https://open.er-api.com/v6/latest/TWD');
+    const d=await r.json();
+    if(d.result==='success'){
+      rates=d.rates;
+      saveCache(CK_RATES,rates,{ts:Date.now()});
+      updateRateDisplay();
+      document.getElementById('rateStatus').textContent=`✅ 更新於 ${new Date().toLocaleTimeString('zh-TW')}`;
+    }
+  }catch(e){
+    document.getElementById('rateStatus').textContent='❌ 無法取得匯率，使用手動輸入';
+  }
+}
+
+function loadRates(){
+  const c=loadCache(CK_RATES);
+  if(c&&c.data){
+    rates=c.data;
+    const age=Math.floor((Date.now()-(c.ts||0))/3600000);
+    updateRateDisplay();
+    document.getElementById('rateStatus').textContent=`上次更新：${age}小時前`;
+    if(age>12)fetchRate(true); // 超過12小時自動更新
+  }else{
+    fetchRate(true);
+  }
+}
+
+function saveCustomRate(){
+  const cur=document.getElementById('rateFrom').value;
+  const val=parseFloat(document.getElementById('rateValue').value);
+  if(!isNaN(val)&&val>0){rates[cur]=val;saveCache(CK_RATES,rates,{ts:Date.now()});}
+  renderBudget();
+}
+
+function updateRateDisplay(){
+  const cur=document.getElementById('rateFrom')?.value||'JPY';
+  const r=rates[cur];
+  if(r&&document.getElementById('rateValue'))
+    document.getElementById('rateValue').value=r.toFixed(cur==='KRW'?1:4);
+}
+
+function toTWD(amount,currency){
+  const a=parseFloat(amount)||0;
+  if(!currency||currency==='TWD')return a;
+  const r=rates[currency];
+  if(!r)return null;
+  return a/r;
+}
+
+function fmtTWD(twd){
+  if(twd===null||twd===undefined)return '';
+  return `≈ NT$ ${Math.round(twd).toLocaleString()}`;
+}
+
+function updateTWDPreview(){
+  const amt=document.getElementById('bud-amount').value;
+  const cur=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
+  const twd=toTWD(amt,cur);
+  document.getElementById('twdPreview').textContent=twd!==null&&cur!=='TWD'?fmtTWD(twd):'';
+}
+
+function updateEditTWDPreview(){
+  const amt=document.getElementById('eb-amount').value;
+  const cur=document.getElementById('eb-currency-custom').value.trim()||document.getElementById('eb-currency').value;
+  const twd=toTWD(amt,cur);
+  document.getElementById('editTwdPreview').textContent=twd!==null&&cur!=='TWD'?fmtTWD(twd):'';
+}
+
+function syncCustomCurrency(){
+  const v=document.getElementById('bud-currency-custom').value.trim();
+  if(v)document.getElementById('bud-currency').value='JPY';
+  updateTWDPreview();
+}
+function syncEditCustomCurrency(){
+  const v=document.getElementById('eb-currency-custom').value.trim();
+  if(v)document.getElementById('eb-currency').value='JPY';
+  updateEditTWDPreview();
+}
+
+// Load/Fetch
+async function loadBudgetItems(force=false){
+  if(!currentTrip)return;
+  if(!force){const c=loadCache('jp2_budget_'+currentTrip.id);if(c){budgetItems=c.data;budgetRowMap=c.rowMap||{};renderBudget();_fetchBudget().catch(()=>{});return;}}
+  await _fetchBudget();
+}
+async function _fetchBudget(){
+  if(!currentTrip)return;
+  try{
+    await gsEnsure(currentTrip.id+'_budget',BUDGET_COLS);
+    const rows=await gsGet(currentTrip.id+'_budget');
+    budgetRowMap={};budgetItems=[];
+    for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToBudget(r);if(item.id){budgetItems.push(item);budgetRowMap[item.id]=i+1;}}
+    saveCache('jp2_budget_'+currentTrip.id,budgetItems,{rowMap:budgetRowMap});
+    renderBudget();
+  }catch(e){showSync('❌ '+e.message,'var(--red)');}
+}
+
+async function addBudgetItem(){
+  if(isBusy)return;
+  const amount=document.getElementById('bud-amount').value.trim();
+  if(!amount){alert('請填寫金額');return;}
+  const currency=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
+  const item={
+    id:Date.now(),amount,currency,
+    category:document.getElementById('bud-cat').value,
+    region:document.getElementById('bud-region').value,
+    date:document.getElementById('bud-date').value||new Date().toISOString().slice(0,10),
+    note:document.getElementById('bud-note').value.trim(),
+    createdAt:new Date().toLocaleDateString('zh-TW')
+  };
+  setBusy(true,'addBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
+  try{
+    await gsAppend(currentTrip.id+'_budget',budgetToRow(item));
+    budgetItems.unshift(item);
+    clearBudgetForm();switchTab('budget');renderBudget();
+    showSync('✅ 已新增','var(--sage)');
+    await _fetchBudget();
+  }catch(e){showSync('❌ '+e.message,'var(--red)');alert('新增失敗：'+e.message);}
+  setBusy(false,'addBudgetBtn');
+}
+
+async function deleteBudgetItem(id){
+  if(isBusy)return;if(!confirm('確認刪除此筆記帳？'))return;
+  setBusy(true);const row=budgetRowMap[id];
+  budgetItems=budgetItems.filter(i=>i.id!==id);renderBudget();
+  try{if(row)await gsDel(currentTrip.id+'_budget',row);showSync('✅ 已刪除','var(--sage)');await _fetchBudget();}
+  catch(e){showSync('❌ '+e.message,'var(--red)');}
+  setBusy(false);
+}
+
+function openEditBudget(id){
+  const item=budgetItems.find(i=>i.id===id);if(!item)return;
+  editBudgetId=id;
+  document.getElementById('eb-amount').value=item.amount||'';
+  // detect custom currency
+  const stdCurs=['JPY','TWD','USD','EUR','KRW','HKD'];
+  if(stdCurs.includes(item.currency)){
+    document.getElementById('eb-currency').value=item.currency;
+    document.getElementById('eb-currency-custom').value='';
+  }else{
+    document.getElementById('eb-currency').value='JPY';
+    document.getElementById('eb-currency-custom').value=item.currency||'';
+  }
+  document.getElementById('eb-cat').value=item.category||'餐飲';
+  document.getElementById('eb-region').value=item.region||'';
+  document.getElementById('eb-date').value=item.date||'';
+  document.getElementById('eb-note').value=item.note||'';
+  updateEditTWDPreview();
+  document.getElementById('editBudgetBackdrop').classList.add('open');
+}
+
+async function saveBudgetEdit(){
+  if(isBusy)return;
+  const item=budgetItems.find(i=>i.id===editBudgetId);if(!item)return;
+  const amount=document.getElementById('eb-amount').value.trim();if(!amount){alert('金額不能為空');return;}
+  item.amount=amount;
+  item.currency=document.getElementById('eb-currency-custom').value.trim()||document.getElementById('eb-currency').value;
+  item.category=document.getElementById('eb-cat').value;
+  item.region=document.getElementById('eb-region').value;
+  item.date=document.getElementById('eb-date').value;
+  item.note=document.getElementById('eb-note').value.trim();
+  closeModal('editBudgetBackdrop');renderBudget();
+  setBusy(true,'saveBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
+  const row=budgetRowMap[item.id];
+  if(row){try{await gsUpdate(currentTrip.id+'_budget',row,budgetToRow(item));saveCache('jp2_budget_'+currentTrip.id,budgetItems,{rowMap:budgetRowMap});showSync('✅ 已儲存','var(--sage)');}catch(e){showSync('❌ '+e.message,'var(--red)');}}
+  setBusy(false,'saveBudgetBtn');
+}
+
+function setBudgetFilter(f){
+  budgetFilter=f;
+  document.querySelectorAll('#panel-budget .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
+  renderBudget();
+}
+
+function clearBudgetForm(){
+  document.getElementById('bud-amount').value='';
+  document.getElementById('bud-currency').value='JPY';
+  document.getElementById('bud-currency-custom').value='';
+  document.getElementById('bud-cat').value='餐飲';
+  document.getElementById('bud-region').value='';
+  document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('bud-note').value='';
+  document.getElementById('twdPreview').textContent='';
+}
+
+function renderBudget(){
+  const filtered=budgetFilter==='all'?budgetItems:budgetItems.filter(i=>i.category===budgetFilter);
+
+  // Summary
+  let totalByCur={}, totalTWD=0, catTotals={};
+  budgetItems.forEach(item=>{
+    const a=parseFloat(item.amount)||0;
+    const cur=item.currency||'JPY';
+    totalByCur[cur]=(totalByCur[cur]||0)+a;
+    const twd=toTWD(a,cur);
+    if(twd!==null)totalTWD+=twd;
+    catTotals[item.category]=(catTotals[item.category]||0)+(toTWD(a,cur)||0);
+  });
+
+  const summaryEl=document.getElementById('budgetSummary');
+  summaryEl.innerHTML=`<div class="budget-summary">
+    <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px">💰 總花費</div>
+    <div class="budget-total">${Object.entries(totalByCur).map(([c,a])=>`${a.toLocaleString()} ${c}`).join('  +  ')||'—'}</div>
+    ${totalTWD?`<div class="budget-twd">≈ NT$ ${Math.round(totalTWD).toLocaleString()} 台幣</div>`:''}
+    <div class="budget-cats">
+      ${Object.entries(catTotals).map(([cat,twd])=>`
+        <div class="budget-cat-pill">${catIcon[cat]||'📦'} ${cat} <span>NT$${Math.round(twd).toLocaleString()}</span></div>
+      `).join('')}
+    </div>
+  </div>`;
+
+  const el=document.getElementById('budgetList');
+  if(!filtered.length){el.innerHTML=`<div class="empty-state"><div class="emoji">💰</div><p>${budgetItems.length?'沒有符合條件的記帳':'還沒有記帳，點「新增」開始記錄！'}</p></div>`;return;}
+
+  // Group by date
+  const byDate={};
+  filtered.forEach(item=>{
+    const d=item.date||item.createdAt||'未知日期';
+    if(!byDate[d])byDate[d]=[];
+    byDate[d].push(item);
+  });
+  const sortedDates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+
+  el.innerHTML=sortedDates.map(date=>{
+    const dayItems=byDate[date];
+    const dayTWD=dayItems.reduce((s,i)=>{const t=toTWD(parseFloat(i.amount)||0,i.currency);return s+(t||0);},0);
+    return `<div class="budget-day-group">
+      <div class="budget-day-label">
+        <span>${date}</span>
+        ${dayTWD?`<span style="color:var(--teal)">NT$${Math.round(dayTWD).toLocaleString()}</span>`:''}
+      </div>
+      ${dayItems.map(item=>{
+        const twd=toTWD(parseFloat(item.amount)||0,item.currency);
+        return `<div class="budget-item">
+          <div class="budget-item-icon">${catIcon[item.category]||'📦'}</div>
+          <div class="budget-item-body">
+            <div class="budget-item-main">
+              <span class="budget-item-amount">${parseFloat(item.amount).toLocaleString()}</span>
+              <span class="budget-item-currency">${item.currency}</span>
+              ${twd&&item.currency!=='TWD'?`<span class="budget-item-twd">${fmtTWD(twd)}</span>`:''}
+            </div>
+            <div class="budget-item-meta">
+              <span>${item.category}</span>
+              ${item.region?`<span>📍${item.region}</span>`:''}
+              ${item.note?`<span>${item.note}</span>`:''}
+            </div>
+          </div>
+          <div class="budget-item-actions">
+            <div class="act-btn" onclick="openEditBudget(${item.id})">✏️</div>
+            <div class="act-btn danger" onclick="deleteBudgetItem(${item.id})">🗑</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// CLOUDINARY PHOTO UPLOAD
+// ══════════════════════════════════════════
+const CLD_CLOUD  = 'dnqktmqfi';
+const CLD_PRESET = 'travel_unsigned'; // unsigned upload preset
+const CLD_URL    = `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`;
+
+// Upload one photo, return secure_url
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLD_PRESET);
+  fd.append('folder', 'travel');
+  const resp = await fetch(CLD_URL, { method:'POST', body: fd });
+  if (!resp.ok) throw new Error('上傳失敗 HTTP '+resp.status);
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.secure_url;
+}
+
+// Handle photo selection & upload for a form
+async function uploadShopPhoto(event, fieldId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById(fieldId+'-status');
+  const previewEl = document.getElementById(fieldId+'-preview');
+  const hiddenEl  = document.getElementById(fieldId);
+  statusEl.textContent = '⟳ 上傳中...';
+  statusEl.style.color = 'var(--muted)';
+  try {
+    const url = await uploadToCloudinary(file);
+    const photos = safeJSON(hiddenEl.value, []);
+    photos.push(url);
+    hiddenEl.value = JSON.stringify(photos);
+    renderPhotoPreview(previewEl, photos, fieldId);
+    statusEl.textContent = '✅ 上傳成功';
+    statusEl.style.color = 'var(--sage)';
+    setTimeout(()=>statusEl.textContent='', 2000);
+  } catch(e) {
+    statusEl.textContent = '❌ '+e.message+'\n請先在 Cloudinary 建立 unsigned preset「travel_unsigned」';
+    statusEl.style.color = 'var(--red)';
+  }
+  event.target.value = '';
+}
+
+// Render photo thumbnails with delete button
+function renderPhotoPreview(container, photos, fieldId) {
+  container.innerHTML = photos.map((url,i) => `
+    <div style="position:relative;display:inline-block">
+      <img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="openPhotoViewer('${url}')">
+      <button onclick="removePhoto('${fieldId}',${i})" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+    </div>`).join('');
+}
+
+function removePhoto(fieldId, idx) {
+  const hiddenEl = document.getElementById(fieldId);
+  const previewEl = document.getElementById(fieldId+'-preview');
+  const photos = safeJSON(hiddenEl.value, []);
+  photos.splice(idx, 1);
+  hiddenEl.value = JSON.stringify(photos);
+  renderPhotoPreview(previewEl, photos, fieldId);
+}
+
+// Full-screen photo viewer
+function openPhotoViewer(url) {
+  let overlay = document.getElementById('photoOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'photoOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.onclick = () => overlay.remove();
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `<img src="${url}" style="max-width:100%;max-height:90vh;border-radius:8px;object-fit:contain">
+    <div style="position:absolute;top:16px;right:16px;color:white;font-size:28px;cursor:pointer;line-height:1" onclick="document.getElementById('photoOverlay').remove()">×</div>`;
+}
+
+// ══════════════════════════════════════════
+// RECEIPT SCAN (Gemini Vision)
+// ══════════════════════════════════════════
+const GEMINI_KEY = 'AIzaSyAtocO6cdprdlapl1qC2X3ZnIoNDDdd1zo';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_KEY}`;
+
+async function handleReceiptScan(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('receiptImg').src = e.target.result;
+    document.getElementById('receiptPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById('scanStatus').textContent = '⟳ 辨識中...';
+  document.getElementById('scanStatus').style.color = 'var(--muted)';
+
+  // Convert to base64
+  const base64 = await fileToBase64(file);
+  const mimeType = file.type || 'image/jpeg';
+
+  const prompt = `分析這張收據或帳單照片，回傳以下 JSON，不要有任何其他文字、不要用 markdown、不要用代碼塊，只回傳純 JSON：
+{"amount":金額數字,"currency":"幣別(JPY/TWD/USD/EUR/KRW/HKD)","category":"分類(餐飲/交通/住宿/購物/門票/其他)","note":"店名或說明最多15字","date":"日期YYYY-MM-DD或空字串"}
+金額取收據上最終合計金額。`;
+
+  try {
+    const resp = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: base64 } }
+          ]
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data).slice(0,300);
+
+    // Debug: show raw response
+    const statusEl = document.getElementById('scanStatus');
+    statusEl.textContent = 'Gemini 回傳：' + text;
+    statusEl.style.color = 'var(--blue)';
+    statusEl.style.whiteSpace = 'pre-wrap';
+    statusEl.style.wordBreak = 'break-all';
+
+    // Try to extract JSON
+    let jsonStr = text.replace(/[\u0060]{3}json\s*/gi,'').replace(/[\u0060]{3}\s*/gi,'').trim();
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    let jsonToParse = jsonMatch ? jsonMatch[0] : jsonStr;
+    // If JSON is truncated, try to close it
+    if (!jsonToParse.trim().endsWith('}')) {
+      jsonToParse = jsonToParse.trim() + '"}';
+    }
+    let result;
+    try { result = JSON.parse(jsonToParse); }
+    catch(pe) {
+      // Last resort: extract key values with regex
+      const amtMatch = jsonToParse.match(/"amount"\s*:\s*(\d+)/);
+      const curMatch = jsonToParse.match(/"currency"\s*:\s*"([^"]+)"/);
+      const catMatch = jsonToParse.match(/"category"\s*:\s*"([^"]+)"/);
+      const noteMatch = jsonToParse.match(/"note"\s*:\s*"([^"]+)"/);
+      const dateMatch = jsonToParse.match(/"date"\s*:\s*"([^"]+)"/);
+      if (!amtMatch) throw new Error('無法取得金額，回傳：' + jsonToParse);
+      result = {
+        amount: parseInt(amtMatch[1]),
+        currency: curMatch?.[1] || 'JPY',
+        category: catMatch?.[1] || '其他',
+        note: noteMatch?.[1] || '',
+        date: dateMatch?.[1] || ''
+      };
+    }
+
+    // Fill form
+    if (result.amount && result.amount > 0) {
+      document.getElementById('bud-amount').value = result.amount;
+    }
+    if (result.currency) {
+      const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
+      if (stdCurs.includes(result.currency)) {
+        document.getElementById('bud-currency').value = result.currency;
+        document.getElementById('bud-currency-custom').value = '';
+      } else {
+        document.getElementById('bud-currency-custom').value = result.currency;
+      }
+    }
+    if (result.category) {
+      const validCats = ['餐飲','交通','住宿','購物','門票','其他'];
+      if (validCats.includes(result.category))
+        document.getElementById('bud-cat').value = result.category;
+    }
+    if (result.note) document.getElementById('bud-note').value = result.note;
+    if (result.date) document.getElementById('bud-date').value = result.date;
+
+    updateTWDPreview();
+    document.getElementById('scanStatus').textContent = '✅ 辨識完成，請確認後儲存';
+    document.getElementById('scanStatus').style.color = 'var(--sage)';
+
+  } catch(e) {
+    document.getElementById('scanStatus').textContent = `❌ 辨識失敗：${e.message}`;
+    document.getElementById('scanStatus').style.color = 'var(--red)';
+  }
+
+  // Reset file input so same file can be scanned again
+  event.target.value = '';
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ══════════════════════════════════════════
+// ITINERARY
+// ══════════════════════════════════════════
+// Data structure:
+// days = [ { id, label, date, note, spots:[{spotId, order}] }, ... ]
+// Stored as one row per day in trip_xxx_itinerary sheet
+// ITIN_COLS: id, label, date, note, spotIds (JSON array of spotId)
+
+const ITIN_COLS = ['id','label','date','note','spotIds'];
+let days = [], itinRowMap = {};
+let addToItinSpotId = null;
+
+function itinToRow(d){ return ITIN_COLS.map(k => k==='spotIds' ? JSON.stringify(d.spotIds||[]) : d[k]||''); }
+function rowToItin(row){ return { id:parseInt(row[0])||0, label:row[1]||'', date:row[2]||'', note:row[3]||'', spotIds:safeJSON(row[4],[]) }; }
+
+// Load
+async function loadItinerary(force=false){
+  if(!currentTrip) return;
+  const ck='jp2_itin_'+currentTrip.id;
+  if(!force){ const c=loadCache(ck); if(c){ days=c.data; itinRowMap=c.rowMap||{}; renderItinerary(); _fetchItin().catch(()=>{}); return; } }
+  await _fetchItin();
+}
+async function _fetchItin(){
+  if(!currentTrip) return;
+  try{
+    await gsEnsure(currentTrip.id+'_itinerary', ITIN_COLS);
+    const rows = await gsGet(currentTrip.id+'_itinerary');
+    itinRowMap={}; days=[];
+    for(let i=1;i<rows.length;i++){ const r=rows[i]; if(!r||!r[0]) continue; const d=rowToItin(r); if(d.id){ days.push(d); itinRowMap[d.id]=i+1; } }
+    saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
+    renderItinerary();
+  }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
+}
+
+// Add day
+async function addDay(){
+  const n = days.length+1;
+  const d = { id:Date.now(), label:'Day '+n, date:'', note:'', spotIds:[] };
+  days.push(d);
+  renderItinerary();
+  showSync('⟳ 儲存...','var(--muted)');
+  try{
+    await gsAppend(currentTrip.id+'_itinerary', itinToRow(d));
+    await _fetchItin();
+    showSync('✅','var(--sage)');
+  }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
+}
+
+// Delete day
+async function deleteDay(id){
+  if(!confirm('確認刪除此天？景點不會刪除，只是從行程移除。')) return;
+  const row = itinRowMap[id];
+  days = days.filter(d=>d.id!==id);
+  renderItinerary();
+  if(row){ try{ await gsDel(currentTrip.id+'_itinerary', row); await _fetchItin(); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+}
+
+// Add spot to day
+async function addSpotToDay(dayId, spotId){
+  const day = days.find(d=>d.id===dayId);
+  if(!day) return;
+  if(day.spotIds.includes(spotId)){ alert('此景點已在此天行程中'); return; }
+  day.spotIds.push(spotId);
+  renderItinerary();
+  renderAddToItinDays(); // update modal
+  const row = itinRowMap[day.id];
+  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+}
+
+// Remove spot from day
+async function removeSpotFromDay(dayId, spotId){
+  const day = days.find(d=>d.id===dayId);
+  if(!day) return;
+  day.spotIds = day.spotIds.filter(id=>id!==spotId);
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+}
+
+// Move spot up/down within day
+async function moveSpot(dayId, spotId, dir){
+  const day = days.find(d=>d.id===dayId);
+  if(!day) return;
+  const idx = day.spotIds.indexOf(spotId);
+  const newIdx = idx+dir;
+  if(newIdx<0||newIdx>=day.spotIds.length) return;
+  day.spotIds.splice(idx,1);
+  day.spotIds.splice(newIdx,0,spotId);
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+}
+
+// Save day note inline
+async function saveDayNote(dayId, note){
+  const day = days.find(d=>d.id===dayId);
+  if(!day) return;
+  day.note = note;
+  const row = itinRowMap[day.id];
+  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+}
+
+// Save day date inline
+async function saveDayDate(dayId, date){
+  const day = days.find(d=>d.id===dayId);
+  if(!day) return;
+  day.date = date;
+  const row = itinRowMap[day.id];
+  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ } }
+}
+
+// Render itinerary
+function renderItinerary(){
+  const el = document.getElementById('itineraryList');
+  if(!days.length){
+    el.innerHTML=`<div class="empty-state"><div class="emoji">🗓</div><p>還沒有行程，點「＋ 新增天數」開始排行程！<br><br>先到「📍 景點」收集想去的地方，<br>再點景點上的「📅」加入行程。</p></div>`;
+    return;
+  }
+  const spotCatMap2={'自然':'🌿','歷史':'🏯','美食':'🍜','購物街':'🛍','體驗':'🎨','其他':'📌'};
+  el.innerHTML = days.map((day,di) => {
+    const spotCards = day.spotIds.map((sid,idx) => {
+      const spot = spotItems.find(s=>s.id===sid);
+      if(!spot) return '';
+      const mapUrl = (spot.links&&spot.links[0]?.url) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name)}`;
+      return `<div class="day-spot-item">
+        <div class="day-spot-num">${idx+1}</div>
+        <div class="day-spot-body">
+          <div class="day-spot-name">${spot.name}</div>
+          <div class="day-spot-cat">${spotCatMap2[spot.category]||'📌'} ${spot.category}${spot.region?' · '+spot.region:''}</div>
+        </div>
+        <div class="day-spot-actions">
+          <a class="day-spot-btn" href="${mapUrl}" target="_blank" rel="noopener" title="地圖">🗺</a>
+          ${idx>0?`<div class="day-spot-btn" onclick="moveSpot(${day.id},${sid},-1)" title="上移">↑</div>`:'<div class="day-spot-btn" style="opacity:.2">↑</div>'}
+          ${idx<day.spotIds.length-1?`<div class="day-spot-btn" onclick="moveSpot(${day.id},${sid},1)" title="下移">↓</div>`:'<div class="day-spot-btn" style="opacity:.2">↓</div>'}
+          <div class="day-spot-btn danger" onclick="removeSpotFromDay(${day.id},${sid})" title="移除" style="color:var(--red)">✕</div>
+        </div>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    return `<div class="day-card">
+      <div class="day-header">
+        <div class="day-label">${day.label}</div>
+        <input type="date" value="${day.date||''}" onchange="saveDayDate(${day.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--paper);color:var(--muted);width:120px;flex-shrink:0">
+        <div class="day-note-wrap">
+          <span class="day-note" id="dayNote_${day.id}" onclick="startEditDayNote(${day.id})">${day.note||'點此加備註（住宿、集合地點...）'}</span>
+        </div>
+        <div class="day-del" onclick="deleteDay(${day.id})">🗑</div>
+      </div>
+      <div class="day-spots">
+        ${spotCards||`<div class="day-empty">點景點的「📅」按鈕加入此天</div>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Inline note edit
+function startEditDayNote(dayId){
+  const span = document.getElementById('dayNote_'+dayId);
+  if(!span) return;
+  const day = days.find(d=>d.id===dayId);
+  const inp = document.createElement('input');
+  inp.type='text'; inp.className='day-note-input'; inp.value=day?.note||'';
+  inp.placeholder='備註（住宿、集合地點...）';
+  span.replaceWith(inp);
+  inp.focus();
+  inp.onblur = ()=>{ saveDayNote(dayId, inp.value); renderItinerary(); };
+  inp.onkeydown = e=>{ if(e.key==='Enter') inp.blur(); };
+}
+
+// Open add-to-itinerary modal
+function openAddToItinerary(spotId){
+  addToItinSpotId = spotId;
+  const spot = spotItems.find(s=>s.id===spotId);
+  document.getElementById('addToItinSpotName').textContent = spot?.name||'';
+  renderAddToItinDays();
+  document.getElementById('addToItinBackdrop').classList.add('open');
+}
+
+function renderAddToItinDays(){
+  const el = document.getElementById('addToItinDayList');
+  if(!days.length){ el.innerHTML=`<div class="empty-state" style="padding:16px"><p>還沒有天數，點下方新增</p></div>`; return; }
+  el.innerHTML = days.map(day=>{
+    const already = day.spotIds.includes(addToItinSpotId);
+    return `<div class="itin-pick-item ${already?'in-day':''}" onclick="${already?'':'addSpotToDay('+day.id+','+addToItinSpotId+')'}">
+      <span style="font-size:18px">🗓</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600">${day.label}</div>
+        ${day.date?`<div style="font-size:11px;color:var(--muted)">${day.date}</div>`:''}
+        <div style="font-size:11px;color:var(--muted)">${day.spotIds.length} 個景點</div>
+      </div>
+      ${already?`<span class="itin-pick-badge">已加入</span>`:'<span style="color:var(--teal);font-size:18px">＋</span>'}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadTrips();
+</script>
+</body>
+</html>
