@@ -2165,23 +2165,27 @@ function renderItinerary(){
             : '';
           if (todayWeekDay) {
             const note = spot.note;
-            const isClosed = (
-              // Format 1: 公休日：週一
-              /公休[日]?[：:][^\n]*週/.test(note) && new RegExp('公休[日]?[：:][^\n]*週' + todayWeekDay).test(note)
-            ) || (
-              // Format 2: 週一：公休 or 週一:公休 (from Gemini output)
-              new RegExp('週' + todayWeekDay + '[：:][^\\n]*公休').test(note)
-            ) || (
-              // Format 3: 週一：休息
-              new RegExp('週' + todayWeekDay + '[：:][^\\n]*休[息日]').test(note)
-            ) || (
-              // Format 4: 定休日：週一
-              new RegExp('定休[日]?[：:][^\n]*週' + todayWeekDay).test(note)
-            );
-            const isOpen = note.includes('無休') || note.includes('全年無休') ||
-              new RegExp('週' + todayWeekDay + '[：:]\\s*\\d{1,2}:\\d{2}').test(note);
-            if (isClosed && !isOpen) {
-              closedWarning = `<div style="background:#fef2f2;color:#c0392b;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;margin-top:4px">⚠️ 今日週${todayWeekDay}公休，請確認</div>`;
+            const isOpen = note.includes('無休') || note.includes('全年無休');
+            if (!isOpen) {
+              // Format A: 週一：公休 (full-width or half-width colon)
+              const lineForToday = new RegExp('週' + todayWeekDay + '[：:]\\s*(.+)').exec(note);
+              const todayIsClosed = lineForToday && (
+                lineForToday[1].includes('公休') ||
+                lineForToday[1].includes('休息') ||
+                lineForToday[1].includes('休日') ||
+                lineForToday[1].includes('定休') ||
+                lineForToday[1].includes('休館')
+              );
+              // Format B: 公休日：週二、週三
+              const closedDayLine = /公休[日]?[：:]\s*(.+)/.exec(note) ||
+                                    /定休[日]?[：:]\s*(.+)/.exec(note);
+              const inClosedList = closedDayLine && (
+                closedDayLine[1].includes('週' + todayWeekDay) ||
+                closedDayLine[1].includes('周' + todayWeekDay)
+              );
+              if (todayIsClosed || inClosedList) {
+                closedWarning = `<div style="background:#fef2f2;color:#c0392b;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;margin-top:4px">⚠️ 今日週${todayWeekDay}公休，請確認</div>`;
+              }
             }
           }
         }
