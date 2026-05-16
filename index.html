@@ -2021,6 +2021,7 @@ async function sortDaysByDate(){
   showSync('⟳ 儲存排序...','var(--muted)');
   // Save all rows
   isSavingItin = true;
+  itinFetchId++;
   try{
     for(const day of days){
       const row = itinRowMap[day.id];
@@ -2029,7 +2030,10 @@ async function sortDaysByDate(){
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
     showSync('✅ 排序完成','var(--sage)');
   }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
-  finally{ isSavingItin = false; }
+  finally{
+    isSavingItin = false;
+    await _fetchItin(); // re-fetch to confirm
+  }
 }
 
 // Delete day
@@ -2151,25 +2155,27 @@ function renderItinerary(){
         let closedWarning = '';
         if (spot.note && day.date) {
           const weekDayNames = ['日','一','二','三','四','五','六'];
-          const d = new Date(day.date + 'T12:00:00');
-          const todayWeekDay = weekDayNames[d.getDay()];
-          const note = spot.note;
-          // Match patterns like 公休日：週三、公休：週六週日、定休日:水曜日 etc.
-          const closedMatch = note.match(/公休[日]?[：:]\s*([^\n]+)/i) ||
-                              note.match(/定休[日]?[：:]\s*([^\n]+)/i) ||
-                              note.match(/休館[日]?[：:]\s*([^\n]+)/i);
-          if (closedMatch) {
-            const closedDays = closedMatch[1];
-            if (closedDays.includes('週'+todayWeekDay) ||
-                closedDays.includes('周'+todayWeekDay) ||
-                (todayWeekDay==='日' && /週日|周日|星期日|每日|天天/.test(closedDays)) ||
-                closedDays.includes('無休') === false && closedDays.includes(todayWeekDay)) {
-              closedWarning = `<div style="background:#fef2f2;color:#c0392b;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;margin-top:4px;display:inline-flex;align-items:center;gap:4px">⚠️ 今日（週${todayWeekDay}）可能公休，請確認</div>`;
+          // Parse date from string directly to avoid timezone issues
+          const parts = day.date.split('-');
+          const todayWeekDay = parts.length === 3
+            ? weekDayNames[new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getDay()]
+            : '';
+          if (todayWeekDay) {
+            const note = spot.note;
+            if (note.includes('無休') || note.includes('全年無休')) {
+              closedWarning = '';
+            } else {
+              const closedMatch = note.match(/公休[日]?[：:]\s*([^\n\r]+)/) ||
+                                  note.match(/定休[日]?[：:]\s*([^\n\r]+)/) ||
+                                  note.match(/休館[日]?[：:]\s*([^\n\r]+)/) ||
+                                  note.match(/公休[：:]([^\n\r]+)/);
+              if (closedMatch) {
+                const closedStr = closedMatch[1];
+                if (closedStr.includes('週'+todayWeekDay) || closedStr.includes('周'+todayWeekDay)) {
+                  closedWarning = `<div style="background:#fef2f2;color:#c0392b;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;margin-top:4px">⚠️ 今日週${todayWeekDay}公休，請確認</div>`;
+                }
+              }
             }
-          }
-          // Also check if note says 無休 (open every day)
-          if (note.includes('無休') || note.includes('全年無休')) {
-            closedWarning = '';
           }
         }
 
