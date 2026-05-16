@@ -2137,6 +2137,8 @@ function renderItinerary(){
             </div>
             <div class="day-spot-actions">
               ${!isTransport && !isMemo && item.url?`<a class="day-spot-btn" href="${item.url}" target="_blank" rel="noopener">🗺</a>`:''}
+              <div class="day-spot-btn" onclick="moveDayItem(${day.id},${ii},-1)" style="${ii===0?'opacity:.2;pointer-events:none':''}">↑</div>
+              <div class="day-spot-btn" onclick="moveDayItem(${day.id},${ii},1)" style="${ii===(day.items||[]).length-1?'opacity:.2;pointer-events:none':''}">↓</div>
               <div class="day-spot-btn" onclick="toggleEditDayItem(${day.id},${ii})">✏️</div>
               <div class="day-spot-btn danger" onclick="removeDayItem(${day.id},${ii})" style="color:var(--red)">✕</div>
             </div>
@@ -2305,6 +2307,19 @@ function cancelEditDayItem(dayId, idx) {
   const form = document.getElementById(`dayItemEditForm_${dayId}_${idx}`);
   if (body) body.style.display = '';
   if (form) form.style.display = 'none';
+}
+async function moveDayItem(dayId, idx, dir) {
+  const day = days.find(d=>d.id===dayId);
+  if (!day || !day.items) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= day.items.length) return;
+  [day.items[idx], day.items[newIdx]] = [day.items[newIdx], day.items[idx]];
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if (row) {
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+  }
 }
 async function removeDayItem(dayId, idx) {
   const day = days.find(d=>d.id===dayId);
