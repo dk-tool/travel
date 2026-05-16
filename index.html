@@ -2328,6 +2328,7 @@ async function saveSettings() {
       await gsAppend(SETTINGS_SHEET, [key, JSON.stringify(val)]);
     }
     showSync('✅ 設定已儲存', 'var(--sage)');
+    saveCache(CK_SETTINGS, {...settings}); // 存到 cache
     applySettings();
   } catch(e) {
     showSync('❌ ' + e.message, 'var(--red)');
@@ -2400,8 +2401,37 @@ function updateBudgetFilters() {
 // INIT - 立刻從 cache 渲染，背景再同步
 // ══════════════════════════════════════════
 
+// Settings cache key
+const CK_SETTINGS = 'jp2_settings';
+
+// Override loadSettings to use cache
+async function loadSettings() {
+  // 1. 立刻從 cache 套用
+  const c = loadCache(CK_SETTINGS);
+  if (c && c.data) {
+    Object.assign(settings, c.data);
+  }
+  // 2. 背景從 Sheets 同步
+  try {
+    await gsEnsure(SETTINGS_SHEET, ['key','values']);
+    const rows = await gsGet(SETTINGS_SHEET);
+    rows.slice(1).forEach(row => {
+      if (row[0] && row[1]) {
+        try { settings[row[0]] = JSON.parse(row[1]); } catch(e) {}
+      }
+    });
+    // 存回 cache
+    saveCache(CK_SETTINGS, {...settings});
+  } catch(e) { console.warn('Settings sync failed:', e); }
+  applySettings();
+}
+
 // 1. 立刻從 cache 顯示旅程列表（同步，不等網路）
 (function initFromCache() {
+  // 先套用 settings cache
+  const sc = loadCache(CK_SETTINGS);
+  if (sc && sc.data) Object.assign(settings, sc.data);
+
   const c = loadCache(CK_TRIPS);
   if (c && c.data && c.data.length) {
     trips = c.data;
@@ -2411,6 +2441,7 @@ function updateBudgetFilters() {
 })();
 
 // 2. 背景同步
+loadSettings(); // 先載設定
 loadTrips();
 </script>
 </body>
