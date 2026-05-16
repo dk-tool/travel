@@ -2086,37 +2086,28 @@ async function saveDayNote(dayId, note){
 
 // Save day date inline
 async function saveDayDate(dayId, date){
+  if (!date) return; // ignore empty
   const day = days.find(d=>d.id===dayId);
-  if(!day) return;
+  if (!day) return;
+  if (day.date === date) return; // no change
   day.date = date;
   renderItinerary();
   renderSpots();
-  showSync('⟳ 儲存...','var(--muted)');
   const row = itinRowMap[day.id];
-  if(!row){
-    // row not found - need to fetch from sheet first
-    showSync('⟳ 重新同步...','var(--muted)');
-    await _fetchItin();
-    const row2 = itinRowMap[day.id];
-    if(!row2){ showSync('❌ 找不到列','var(--red)'); return; }
-    isSavingItin = true;
-    try{
-      await gsUpdate(currentTrip.id+'_itinerary', row2, itinToRow(day));
-      saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
-      showSync('✅','var(--sage)');
-    }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
-    finally{ isSavingItin = false; }
+  if (!row) {
+    showSync('❌ 找不到列，請重新整理', 'var(--red)');
     return;
   }
   isSavingItin = true;
   itinFetchId++;
-  showSync(`⟳ 更新第${row}行...`, 'var(--muted)');
-  try{
-    const result = await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+  const rowData = itinToRow(day);
+  showSync(`⟳ 存第${row}行 ${date}`, 'var(--muted)');
+  try {
+    await gsUpdate(currentTrip.id+'_itinerary', row, rowData);
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
-    showSync(`✅ 第${row}行已存 date=${day.date}`, 'var(--sage)');
-  }catch(e){
-    showSync('❌ '+e.message,'var(--red)');
+    showSync(`✅ 已存 ${date}`, 'var(--sage)');
+  } catch(e) {
+    showSync('❌ '+e.message, 'var(--red)');
   } finally {
     isSavingItin = false;
   }
@@ -2254,7 +2245,10 @@ function renderItinerary(){
     return `<div class="day-card">
       <div class="day-header">
         <div class="day-label">${day.label}</div>
-        <input type="date" value="${dateVal}" onchange="saveDayDate(${day.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--paper);color:var(--muted);width:130px;flex-shrink:0">
+        <input type="date" value="${dateVal}" 
+          onchange="saveDayDate(${day.id},this.value)"
+          onblur="if(this.value) saveDayDate(${day.id},this.value)"
+          style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--paper);color:var(--ink);width:130px;flex-shrink:0;font-weight:${dateVal?'600':'400'}">
         <span style="font-size:12px;color:var(--rust);font-weight:600;flex-shrink:0">${weekLabel}</span>
         <div class="day-note-wrap">
           <span class="day-note" id="dayNote_${day.id}" onclick="startEditDayNote(${day.id})">${day.note||'點此加備註'}</span>
