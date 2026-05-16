@@ -2109,18 +2109,18 @@ async function saveDayDate(dayId, date){
     return;
   }
   isSavingItin = true;
-  itinFetchId++; // invalidate any pending _fetchItin
+  itinFetchId++;
+  showSync(`⟳ 更新第${row}行...`, 'var(--muted)');
   try{
-    await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+    const result = await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
-    showSync('✅','var(--sage)');
+    showSync(`✅ 第${row}行已存 date=${day.date}`, 'var(--sage)');
   }catch(e){
     showSync('❌ '+e.message,'var(--red)');
   } finally {
     isSavingItin = false;
   }
 }
-
 // Render itinerary
 function renderItinerary(){
   const el = document.getElementById('itineraryList');
