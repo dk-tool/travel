@@ -742,6 +742,21 @@ textarea{resize:vertical;min-height:60px;}
   </div>
 </div>
 
+<!-- MODAL: Opening Hours -->
+<div class="modal-backdrop" id="hoursBackdrop" onclick="closeModal('hoursBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="hoursModalTitle">🕐 營業時間</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:8px">可直接編輯後再存入備註</p>
+    <div id="hoursModalBody" style="font-size:13px;line-height:1.8;color:var(--ink);white-space:pre-wrap;min-height:60px;padding:8px;background:var(--paper);border-radius:6px;border:1px solid var(--border)"></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">⚠️ 資料來自 AI，請以實際為準</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('hoursBackdrop')">關閉</button>
+      <button class="btn btn-teal" id="hoursModalSave" style="flex:2;margin-top:0">💾 存入備註</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Add to Itinerary -->
 <div class="modal-backdrop" id="addToItinBackdrop" onclick="closeModal('addToItinBackdrop',event)">
   <div class="modal">
@@ -1855,13 +1870,54 @@ function fileToBase64(file) {
 // ══════════════════════════════════════════
 // QUERY OPENING HOURS
 // ══════════════════════════════════════════
-function queryHours(spotId) {
+async function queryHours(spotId) {
   const spot = spotItems.find(s=>s.id===spotId);
   if (!spot) return;
-  const query = encodeURIComponent(spot.name + (spot.region ? ' ' + spot.region : '') + ' 營業時間');
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + (spot.region ? ' ' + spot.region : ''))}`;
-  // Open Google Maps directly - most accurate hours info
-  window.open(mapsUrl, '_blank');
+
+  document.getElementById('hoursModalTitle').textContent = `🕐 ${spot.name}`;
+  document.getElementById('hoursModalBody').textContent = '⟳ 查詢中...';
+  document.getElementById('hoursModalBody').contentEditable = 'false';
+  document.getElementById('hoursModalSave').onclick = () => saveHoursToNote(spotId);
+  document.getElementById('hoursBackdrop').classList.add('open');
+
+  // Build maps URL from spot links if available
+  const mapsUrl = spot.links && spot.links[0]?.url ? spot.links[0].url : null;
+  const region = spot.region || (currentTrip?.regions||[]).join('・') || '日本';
+
+  try {
+    const result = await gasCall({
+      action: 'queryHours',
+      name: spot.name,
+      region: region,
+      mapsUrl: mapsUrl || ''
+    });
+    const el = document.getElementById('hoursModalBody');
+    el.textContent = result.hours || '查無資料';
+    el.contentEditable = 'true'; // allow manual edit before saving
+    el.style.border = '1px dashed var(--border)';
+    el.style.borderRadius = '4px';
+    el.style.padding = '8px';
+  } catch(e) {
+    document.getElementById('hoursModalBody').textContent = '❌ 查詢失敗：' + e.message;
+  }
+}
+
+function saveHoursToNote(spotId) {
+  const spot = spotItems.find(s=>s.id===spotId);
+  if (!spot) return;
+  const el = document.getElementById('hoursModalBody');
+  const hours = el.textContent || el.innerText;
+  if (!hours || hours.startsWith('❌') || hours.startsWith('⟳')) return;
+  spot.note = hours;
+  renderSpots();
+  closeModal('hoursBackdrop');
+  showSync('⟳ 儲存...','var(--muted)');
+  const row = spotRowMap[spot.id];
+  if (row) {
+    gsUpdate(currentTrip.id+'_spots', row, spotToRow(spot))
+      .then(() => { saveCache(ck_spot(currentTrip.id), spotItems, {rowMap:spotRowMap}); showSync('✅','var(--sage)'); })
+      .catch(e => showSync('❌ '+e.message, 'var(--red)'));
+  }
 }
 
 function saveHoursToNote(spotId) {
