@@ -879,6 +879,19 @@ async function selectTrip(id){
   switchTab('shopping');
   loadRates();
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
+
+  // 立刻從 cache 渲染（同步）
+  const sc = loadCache(ck_shop(currentTrip.id));
+  const spc = loadCache(ck_spot(currentTrip.id));
+  const bc = loadCache('jp2_budget_'+currentTrip.id);
+  const ic = loadCache('jp2_itin_'+currentTrip.id);
+  if(sc){shopItems=sc.data;shopRowMap=sc.rowMap||{};renderShop();}
+  if(spc){spotItems=spc.data;spotRowMap=spc.rowMap||{};renderSpots();}
+  if(bc){budgetItems=bc.data;budgetRowMap=bc.rowMap||{};renderBudget();}
+  if(ic){days=ic.data;itinRowMap=ic.rowMap||{};renderItinerary();}
+
+  // 背景同步
+  showSync('🔄 同步中...', 'var(--muted)');
   await loadSettings();
   await loadShopItems();
   await loadSpotItems();
@@ -2033,8 +2046,20 @@ function updateBudgetFilters() {
 }
 
 // ══════════════════════════════════════════
-// INIT
+// INIT - 立刻從 cache 渲染，背景再同步
 // ══════════════════════════════════════════
+
+// 1. 立刻從 cache 顯示旅程列表（同步，不等網路）
+(function initFromCache() {
+  const c = loadCache(CK_TRIPS);
+  if (c && c.data && c.data.length) {
+    trips = c.data;
+    renderTripList();
+    showSync('🔄 同步中...', 'var(--muted)');
+  }
+})();
+
+// 2. 背景同步
 loadTrips();
 </script>
 </body>
