@@ -2216,7 +2216,7 @@ function applyModeToUI(trip) {
 // SETTINGS
 // ══════════════════════════════════════════
 const SETTINGS_SHEET = 'Settings';
-let settings = {
+const SETTINGS_DEFAULTS = {
   shopCats:       ['食品','服飾','美妝','工藝品','紀念品','其他'],
   spotCats:       ['自然','歷史','美食','購物街','體驗','其他'],
   budgetCats:     ['餐飲','交通','住宿','購物','門票','其他'],
@@ -2224,6 +2224,8 @@ let settings = {
   lifeSpotCats:   ['賣場','建材行','政府機關','銀行','診所','其他'],
   lifeBudgetCats: ['建材','家電','家具','雜費','餐飲','其他']
 };
+
+let settings = JSON.parse(JSON.stringify(SETTINGS_DEFAULTS)); // deep copy
 
 let currentSettingsTab = 'travel';
 
@@ -2446,16 +2448,32 @@ async function loadSettings() {
   if (c && c.data) {
     Object.assign(settings, c.data);
   }
+  // 補上任何缺少的 key（確保預設值）
+  Object.keys(SETTINGS_DEFAULTS).forEach(k => {
+    if (!settings[k] || !Array.isArray(settings[k]) || settings[k].length === 0) {
+      settings[k] = [...SETTINGS_DEFAULTS[k]];
+    }
+  });
   // 2. 背景從 Sheets 同步
   try {
     await gsEnsure(SETTINGS_SHEET, ['key','values']);
     const rows = await gsGet(SETTINGS_SHEET);
     rows.slice(1).forEach(row => {
-      if (row[0] && row[1]) {
-        try { settings[row[0]] = JSON.parse(row[1]); } catch(e) {}
+      if (row[0] && row[1] && Object.keys(SETTINGS_DEFAULTS).includes(row[0])) {
+        try {
+          const parsed = JSON.parse(row[1]);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            settings[row[0]] = parsed;
+          }
+        } catch(e) {}
       }
     });
-    // 存回 cache
+    // 補上 Sheets 裡缺少的 key
+    Object.keys(SETTINGS_DEFAULTS).forEach(k => {
+      if (!settings[k] || settings[k].length === 0) {
+        settings[k] = [...SETTINGS_DEFAULTS[k]];
+      }
+    });
     saveCache(CK_SETTINGS, {...settings});
   } catch(e) { console.warn('Settings sync failed:', e); }
   applySettings();
@@ -2465,7 +2483,15 @@ async function loadSettings() {
 (function initFromCache() {
   // 先套用 settings cache
   const sc = loadCache(CK_SETTINGS);
-  if (sc && sc.data) Object.assign(settings, sc.data);
+  if (sc && sc.data) {
+    Object.assign(settings, sc.data);
+  }
+  // 補上缺少的 key
+  Object.keys(SETTINGS_DEFAULTS).forEach(k => {
+    if (!settings[k] || !Array.isArray(settings[k]) || settings[k].length === 0) {
+      settings[k] = [...SETTINGS_DEFAULTS[k]];
+    }
+  });
 
   const c = loadCache(CK_TRIPS);
   if (c && c.data && c.data.length) {
