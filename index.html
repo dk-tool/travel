@@ -1016,6 +1016,9 @@ async function selectTrip(id){
   const spc = loadCache(ck_spot(currentTrip.id));
   const bc  = loadCache('jp2_budget_'+currentTrip.id);
   const ic  = loadCache('jp2_itin_'+currentTrip.id);
+  // If cache has old format (spotIds field), clear it to force re-migration
+  const needsMigration = ic && ic.data && ic.data.some(d => d.spotIds !== undefined);
+  if (needsMigration) clearCache('jp2_itin_'+currentTrip.id);
 
   if(sc) {shopItems=sc.data||[];shopRowMap=sc.rowMap||{};}
   if(ic) {days=ic.data||[];itinRowMap=ic.rowMap||{};} // 先載 days！
@@ -1933,16 +1936,18 @@ function rowToItin(row){
   const raw4 = safeJSON(row[4],[]);
   const raw5 = safeJSON(row[5],[]);
   let entries;
-  if (row[4] && raw4.length > 0 && typeof raw4[0] === 'object' && raw4[0].type) {
-    // New format: entries array
+  // New format: array of objects with type field
+  if (Array.isArray(raw4) && raw4.length > 0 && typeof raw4[0] === 'object' && raw4[0] !== null && 'type' in raw4[0]) {
     entries = raw4;
-  } else if (row[4] || row[5]) {
-    // Old format: migrate spotIds + items to entries
-    const spotEntries = raw4.map ? raw4.filter(id => id).map(id => ({type:'spot', spotId: typeof id === 'number' ? id : parseInt(id)})) : [];
-    const itemEntries = raw5.map ? raw5.map(item => ({...item, type: item.type||'place'})) : [];
-    entries = [...spotEntries, ...itemEntries];
   } else {
-    entries = [];
+    // Old format: raw4 = spotIds (numbers), raw5 = items (objects)
+    const spotEntries = Array.isArray(raw4)
+      ? raw4.filter(id => id || id === 0).map(id => ({type:'spot', spotId: parseInt(id)})).filter(e => !isNaN(e.spotId))
+      : [];
+    const itemEntries = Array.isArray(raw5)
+      ? raw5.map(item => ({...item, type: item.type||'place'}))
+      : [];
+    entries = [...spotEntries, ...itemEntries];
   }
   return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', entries };
 }
