@@ -398,6 +398,7 @@ textarea{resize:vertical;min-height:60px;}
     <div id="panel-itinerary" class="panel">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <button onclick="addDay()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--teal);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">＋ 新增天數</button>
+        <button onclick="sortDaysByDate()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--paper);color:var(--muted);border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">📅 依日期排序</button>
         <span style="font-size:11px;color:var(--muted)">從景點庫點「📅 加入行程」排入各天</span>
       </div>
       <div id="itineraryList"></div>
@@ -1988,6 +1989,33 @@ async function addDay(){
     await _fetchItin();
     showSync('✅','var(--sage)');
   }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
+}
+
+// Sort days by date
+async function sortDaysByDate(){
+  const hasDates = days.some(d=>d.date);
+  if(!hasDates){ alert('請先為各天設定日期再排序'); return; }
+  days.sort((a,b)=>{
+    if(!a.date && !b.date) return 0;
+    if(!a.date) return 1;
+    if(!b.date) return -1;
+    return a.date.localeCompare(b.date);
+  });
+  // Re-label Day 1, Day 2...
+  days.forEach((d,i) => d.label = 'Day '+(i+1));
+  renderItinerary();
+  showSync('⟳ 儲存排序...','var(--muted)');
+  // Save all rows
+  isSavingItin = true;
+  try{
+    for(const day of days){
+      const row = itinRowMap[day.id];
+      if(row) await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+    }
+    saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
+    showSync('✅ 排序完成','var(--sage)');
+  }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
+  finally{ isSavingItin = false; }
 }
 
 // Delete day
