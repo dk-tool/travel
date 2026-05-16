@@ -900,13 +900,15 @@ async function selectTrip(id){
   if(bc){budgetItems=bc.data||[];budgetRowMap=bc.rowMap||{};renderBudget();}
   if(ic){days=ic.data||[];itinRowMap=ic.rowMap||{};renderItinerary();}
 
-  // 背景同步
+  // 背景同步 - 全部並行載入
   showSync('🔄 同步中...', 'var(--muted)');
   await loadSettings();
-  await loadShopItems();
-  await loadSpotItems();
-  await loadBudgetItems();
-  await loadItinerary();
+  await Promise.all([
+    loadShopItems(),
+    loadSpotItems(),
+    loadBudgetItems(),
+    loadItinerary()
+  ]);
 }
 
 function goToTrips(){
@@ -1751,7 +1753,12 @@ let days = [], itinRowMap = {};
 let addToItinSpotId = null;
 
 function itinToRow(d){ return ITIN_COLS.map(k => k==='spotIds' ? JSON.stringify(d.spotIds||[]) : d[k]||''); }
-function rowToItin(row){ return { id:parseInt(row[0])||0, label:row[1]||'', date:row[2]||'', note:row[3]||'', spotIds:safeJSON(row[4],[]) }; }
+function rowToItin(row){
+  const dateRaw = row[2]||'';
+  // Normalize date to YYYY-MM-DD
+  const dateNorm = dateRaw ? dateRaw.toString().slice(0,10).replace(/\//g,'-') : '';
+  return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', spotIds:safeJSON(row[4],[]) };
+}
 
 // Load
 async function loadItinerary(force=false){
@@ -1772,6 +1779,7 @@ async function _fetchItin(){
     for(let i=1;i<rows.length;i++){ const r=rows[i]; if(!r||!r[0]) continue; const d=rowToItin(r); if(d.id){ days.push(d); itinRowMap[d.id]=i+1; } }
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
     renderItinerary();
+    renderSpots(); // 更新景點上的行程 badge
   }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
 }
 
@@ -1893,12 +1901,16 @@ function renderItinerary(){
       </div>`;
     }).filter(Boolean).join('');
 
+    // Format date for display
+    const dateVal = day.date ? day.date.slice(0,10) : ''; // ensure YYYY-MM-DD
+    const dateDisplay = dateVal ? dateVal.replace(/-/g,'/') : '';
+
     return `<div class="day-card">
       <div class="day-header">
         <div class="day-label">${day.label}</div>
-        <input type="date" value="${day.date||''}" onchange="saveDayDate(${day.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--paper);color:var(--muted);width:120px;flex-shrink:0">
+        <input type="date" value="${dateVal}" onchange="saveDayDate(${day.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--paper);color:var(--muted);width:130px;flex-shrink:0">
         <div class="day-note-wrap">
-          <span class="day-note" id="dayNote_${day.id}" onclick="startEditDayNote(${day.id})">${day.note||'點此加備註（住宿、集合地點...）'}</span>
+          <span class="day-note" id="dayNote_${day.id}" onclick="startEditDayNote(${day.id})">${day.note||'點此加備註'}</span>
         </div>
         <div class="day-del" onclick="deleteDay(${day.id})">🗑</div>
       </div>
