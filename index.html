@@ -1118,6 +1118,22 @@ function renderSpots(){
     if(spotFilter==='未去')mF=!item.visited;else if(spotFilter==='已去')mF=item.visited;else if(spotFilter!=='all')mF=item.category===spotFilter;
     return mQ&&mF;
   });
+
+  // Find which day each spot is in
+  const spotDayMap = {}; // spotId → day label
+  days.forEach(day => {
+    day.spotIds.forEach(sid => {
+      if (!spotDayMap[sid]) spotDayMap[sid] = day.label;
+    });
+  });
+
+  // Sort: unscheduled first, scheduled last
+  f.sort((a,b) => {
+    const aIn = !!spotDayMap[a.id];
+    const bIn = !!spotDayMap[b.id];
+    if(aIn === bIn) return 0;
+    return aIn ? 1 : -1;
+  });
   const total=spotItems.length,done=spotItems.filter(i=>i.visited).length;
   document.getElementById('spotStatsBar').innerHTML=`<div class="stat-pill">共<strong>${total}</strong>個</div><div class="stat-pill">✅已去<strong>${done}</strong></div><div class="stat-pill">📍待去<strong>${total-done}</strong></div>`;
   const el=document.getElementById('spotList');
@@ -1127,11 +1143,19 @@ function renderSpots(){
     const catCls=spotCatMap[item.category]||'cat-spot-other';
     const links=(item.links||[]).filter(l=>l.name||l.url);
     const searchQ=encodeURIComponent(item.name+(item.region?' '+item.region:''));
+
+    // Which days is this spot scheduled in?
+    const inDays = days.filter(d=>d.spotIds.includes(item.id));
+    const inItinBadge = inDays.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+          ${inDays.map(d=>`<span style="background:#e0f2f1;color:var(--teal);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600">📅 ${d.label}${d.date?' · '+d.date:''}</span>`).join('')}
+         </div>` : '';
+
     const linksHtml=`<div class="links-section"><div class="links-label">🗺 地圖 &amp; 連結</div>
       ${links.map(l=>`<a class="link-row" href="${l.url||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.name||item.name)}" target="_blank" rel="noopener"><span>🗺</span><span class="link-row-name">${l.name||'查看地圖'}</span><span class="link-row-arrow">↗</span></a>`).join('')}
       <a class="link-row search-link" href="https://www.google.com/search?q=${searchQ}" target="_blank" rel="noopener"><span>🔍</span><span class="link-row-name">Google 搜尋景點資訊</span><span class="link-row-arrow">↗</span></a>
     </div>`;
-    return `<div class="item-card ${item.visited?'visited':''}">
+    return `<div class="item-card ${item.visited?'visited':''}" style="${inDays.length?'opacity:0.75;border-color:#b2dfdb;':''}">
       <div class="item-row1">
         <div class="item-check" onclick="toggleVisited(${item.id})">${item.visited?'✓':''}</div>
         <div class="item-content">
@@ -1142,6 +1166,7 @@ function renderSpots(){
             <span style="margin-left:auto;opacity:.5">${item.createdAt}</span>
           </div>
           ${item.note?`<div class="item-note">${item.note}</div>`:''}
+          ${inItinBadge}
           ${linksHtml}
         </div>
         <div class="item-actions">
