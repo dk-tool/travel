@@ -1156,11 +1156,13 @@ async function _fetchSpot(){
   try{
     await gsEnsure(currentTrip.id+'_spots',SPOT_COLS);
     const rows=await gsGet(currentTrip.id+'_spots');
+    showSync(`景點:${rows.length}行`,'var(--teal)');
     spotRowMap={};spotItems=[];
     for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToSpot(r);if(item.id){spotItems.push(item);spotRowMap[item.id]=i+1;}}
+    showSync(`✅ 景點:${spotItems.length}個`,'var(--sage)');
     saveCache(ck_spot(currentTrip.id),spotItems,{rowMap:spotRowMap});
     renderSpots();
-  }catch(e){showSync('❌ '+e.message,'var(--red)');}
+  }catch(e){showSync('❌ 景點:'+e.message,'var(--red)');alert('景點載入失敗：'+e.message);}
 }
 
 async function addSpotItem(){
