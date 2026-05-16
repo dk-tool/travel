@@ -718,11 +718,27 @@ textarea{resize:vertical;min-height:60px;}
 <div class="modal-backdrop" id="newTripBackdrop" onclick="closeModal('newTripBackdrop',event)">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h3>✈️ 新增旅程</h3>
-    <div class="form-group"><label>旅程名稱 *</label><input type="text" id="trip-name" placeholder="e.g. 岡山倉敷尾道 2026"></div>
-    <div class="form-group"><label>旅遊日期</label><input type="text" id="trip-date" placeholder="e.g. 2026/05/20 ~ 05/25"></div>
+    <h3>新增專案</h3>
+    <!-- Mode selector -->
+    <div class="form-group" style="margin-bottom:16px">
+      <label>類型</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+        <div id="mode-travel" onclick="selectTripMode('travel')" style="padding:14px 10px;border:2px solid var(--rust);border-radius:8px;text-align:center;cursor:pointer;background:#fdf5f2;">
+          <div style="font-size:24px">✈️</div>
+          <div style="font-size:13px;font-weight:600;margin-top:4px;color:var(--rust)">旅遊</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">景點・行程・購物</div>
+        </div>
+        <div id="mode-life" onclick="selectTripMode('life')" style="padding:14px 10px;border:2px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:var(--paper);">
+          <div style="font-size:24px">🏠</div>
+          <div style="font-size:13px;font-weight:600;margin-top:4px;color:var(--muted)">生活</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">待辦・計畫・採購</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group"><label>名稱 *</label><input type="text" id="trip-name" placeholder="e.g. 岡山倉敷尾道 2026"></div>
+    <div class="form-group"><label id="trip-date-label">旅遊日期</label><input type="text" id="trip-date" placeholder="e.g. 2026/05/20 ~ 05/25"></div>
     <div class="form-group">
-      <label>地點（輸入後按加入）</label>
+      <label id="trip-region-label">地點（輸入後按加入）</label>
       <div style="display:flex;gap:8px">
         <input type="text" id="trip-region-input" placeholder="e.g. 岡山" style="flex:1" onkeydown="if(event.key==='Enter'){addRegionChip();event.preventDefault()}">
         <button class="btn btn-secondary" style="width:60px;margin-top:0;padding:0;flex-shrink:0" onclick="addRegionChip()">加入</button>
@@ -736,7 +752,7 @@ textarea{resize:vertical;min-height:60px;}
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('newTripBackdrop')">取消</button>
-      <button class="btn btn-primary" id="saveTripBtn" style="flex:2;margin-top:0" onclick="saveNewTrip()">✈️ 建立旅程</button>
+      <button class="btn btn-primary" id="saveTripBtn" style="flex:2;margin-top:0" onclick="saveNewTrip()">建立</button>
     </div>
   </div>
 </div>
@@ -812,8 +828,8 @@ function fmtDate(str) {
   }
   return str.slice(0,10); // already YYYY-MM-DD or zh-TW format
 }
-function tripToRow(t){return[t.id,t.name,t.date||'',t.icon||'🗾',JSON.stringify(t.regions||[])];}
-function rowToTrip(r){return{id:r[0],name:r[1]||'',date:r[2]||'',icon:r[3]||'🗾',regions:safeJSON(r[4],[])};}
+function tripToRow(t){return[t.id,t.name,t.date||'',t.icon||'🗾',JSON.stringify(t.regions||[]),t.mode||'travel'];}
+function rowToTrip(r){return{id:r[0],name:r[1]||'',date:r[2]||'',icon:r[3]||'🗾',regions:safeJSON(r[4],[]),mode:r[5]||'travel'};}
 function shopToRow(item){return SHOP_COLS.map(k=>{if(k==='links'||k==='photos')return JSON.stringify(item[k]||[]);if(k==='purchased')return item.purchased?'1':'0';return item[k]??'';});}
 function rowToShop(row){const i={};SHOP_COLS.forEach((k,n)=>{if(k==='links'||k==='photos')i[k]=safeJSON(row[n],[]);else if(k==='purchased')i[k]=row[n]==='1';else if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});return i;}
 function spotToRow(item){return SPOT_COLS.map(k=>{if(k==='links')return JSON.stringify(item.links||[]);if(k==='visited')return item.visited?'1':'0';return item[k]??'';});}
@@ -848,7 +864,10 @@ function renderTripList(){
       <div class="trip-icon">${t.icon}</div>
       <div class="trip-body">
         <div class="trip-name">${t.name}</div>
-        <div class="trip-regions">${(t.regions||[]).map(r=>`<span class="trip-region-tag">${r}</span>`).join('')}</div>
+        <div class="trip-regions">
+          <span style="background:${t.mode==='life'?'#e0f2f1':'#fdf5f2'};color:${t.mode==='life'?'var(--teal)':'var(--rust)'};border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">${t.mode==='life'?'🏠 生活':'✈️ 旅遊'}</span>
+          ${(t.regions||[]).map(r=>`<span class="trip-region-tag">${r}</span>`).join('')}
+        </div>
         ${t.date?`<div class="trip-date">📅 ${t.date}</div>`:''}
       </div>
       <div class="trip-del" onclick="event.stopPropagation();deleteTrip('${t.id}')">🗑</div>
@@ -859,7 +878,7 @@ async function saveNewTrip(){
   if(isBusy)return;
   const name=document.getElementById('trip-name').value.trim();
   if(!name){alert('請輸入旅程名稱');return;}
-  const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions]};
+  const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions],mode:currentTripMode};
   setBusy(true,'saveTripBtn');showSync('⟳ 建立...','var(--muted)');
   try{
     await gsAppend(TRIPS_SHEET,tripToRow(trip));
@@ -904,6 +923,7 @@ async function selectTrip(id){
   document.getElementById('screen-trips').classList.remove('active');
   document.getElementById('screen-shopping').classList.add('active');
   switchTab('shopping');
+  applyModeToUI(currentTrip); // apply travel/life mode UI
   loadRates();
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
 
@@ -1328,14 +1348,10 @@ async function refreshData(){
 function openNewTripModal(){
   newTripRegions=[];
   ['trip-name','trip-date'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('trip-icon').value='🗾';
+  currentTripMode='travel';
+  selectTripMode('travel'); // reset to travel mode
   document.getElementById('trip-region-input').value='';
   renderRegionChips();
-  const ep=document.getElementById('emojiPicker');ep.innerHTML='';
-  '🗾 🏯 ⛩️ 🌸 🍱 🛍️ 🎌 🚅 🌊 🏔️ 🎋 🍜 🍣 🎎 🏮'.split(' ').forEach(e=>{
-    const s=document.createElement('span');s.textContent=e;s.className='emoji-opt';
-    s.onclick=()=>document.getElementById('trip-icon').value=e;ep.appendChild(s);
-  });
   document.getElementById('newTripBackdrop').classList.add('open');
 }
 function addRegionChip(){
@@ -2040,8 +2056,100 @@ function renderAddToItinDays(){
   }).join('');
 }
 
-// ══════════════════════════════════════════
-// SETTINGS
+// MODE CONFIG
+const MODES = {
+  travel: {
+    icon: '✈️',
+    tripLabel: '旅遊',
+    dateLabel: '旅遊日期',
+    regionLabel: '地點（城市）',
+    regionPlaceholder: 'e.g. 岡山',
+    datePlaceholder: 'e.g. 2026/05/20 ~ 05/25',
+    namePlaceholder: 'e.g. 岡山倉敷尾道 2026',
+    defaultIcon: '🗾',
+    tabs: { spots:'📍 景點', itinerary:'🗓 行程', add:'✏️ 新增' },
+    addSpot: { title:'📍 新增景點', btn:'＋ 新增景點', tab:'add-spot' },
+    addPlan: { title:'🗓 行程', label:'天數' },
+    emojis: '🗾 🏯 ⛩️ 🌸 🍱 🛍️ 🎌 🚅 🌊 🏔️ 🎋 🍜 🍣 🎎 🏮'
+  },
+  life: {
+    icon: '🏠',
+    tripLabel: '生活事件',
+    dateLabel: '預計日期',
+    regionLabel: '相關地點',
+    regionPlaceholder: 'e.g. 新家地址',
+    datePlaceholder: 'e.g. 2026/06/01',
+    namePlaceholder: 'e.g. 搬新家 2026',
+    defaultIcon: '🏠',
+    tabs: { spots:'📌 待辦地點', itinerary:'📋 計畫', add:'✏️ 新增' },
+    addSpot: { title:'📌 新增待辦地點', btn:'＋ 新增地點', tab:'add-spot' },
+    addPlan: { title:'📋 計畫', label:'階段' },
+    emojis: '🏠 🛋️ 🔧 📦 🧹 🎉 💒 🎓 🏥 🚗 💼 🌱 🏗️ 🛒 📝'
+  }
+};
+
+let currentTripMode = 'travel';
+
+function selectTripMode(mode) {
+  currentTripMode = mode;
+  const travelEl = document.getElementById('mode-travel');
+  const lifeEl = document.getElementById('mode-life');
+  const cfg = MODES[mode];
+
+  // Update UI
+  travelEl.style.borderColor = mode==='travel' ? 'var(--rust)' : 'var(--border)';
+  travelEl.style.background = mode==='travel' ? '#fdf5f2' : 'var(--paper)';
+  travelEl.querySelector('div:nth-child(2)').style.color = mode==='travel' ? 'var(--rust)' : 'var(--muted)';
+  lifeEl.style.borderColor = mode==='life' ? 'var(--teal)' : 'var(--border)';
+  lifeEl.style.background = mode==='life' ? '#f0faf8' : 'var(--paper)';
+  lifeEl.querySelector('div:nth-child(2)').style.color = mode==='life' ? 'var(--teal)' : 'var(--muted)';
+
+  document.getElementById('trip-date-label').textContent = cfg.dateLabel;
+  document.getElementById('trip-date').placeholder = cfg.datePlaceholder;
+  document.getElementById('trip-region-label').textContent = cfg.regionLabel;
+  document.getElementById('trip-region-input').placeholder = cfg.regionPlaceholder;
+  document.getElementById('trip-name').placeholder = cfg.namePlaceholder;
+  document.getElementById('trip-icon').value = cfg.defaultIcon;
+
+  // Update emoji picker
+  const ep = document.getElementById('emojiPicker');
+  ep.innerHTML = '';
+  cfg.emojis.split(' ').forEach(e => {
+    const s = document.createElement('span');
+    s.textContent = e; s.className = 'emoji-opt';
+    s.onclick = () => document.getElementById('trip-icon').value = e;
+    ep.appendChild(s);
+  });
+}
+
+function applyModeToUI(trip) {
+  const mode = trip.mode || 'travel';
+  const cfg = MODES[mode];
+
+  // Update tabs
+  document.getElementById('tab-btn-spots').textContent = cfg.tabs.spots;
+  document.getElementById('tab-btn-itinerary').textContent = cfg.tabs.itinerary;
+
+  // Update add spot form title and button
+  const addSpotTitle = document.querySelector('#panel-add-spot .form-title');
+  if (addSpotTitle) addSpotTitle.textContent = cfg.addSpot.title;
+  const addSpotBtn = document.getElementById('addSpotBtn');
+  if (addSpotBtn) addSpotBtn.textContent = cfg.addSpot.btn;
+
+  // Update add picker spot button
+  const pickerSpot = document.querySelector('#panel-add .add-pick-btn:nth-child(2) .add-pick-label');
+  if (pickerSpot) pickerSpot.textContent = mode==='life' ? '新增待辦地點' : '新增景點';
+  const pickerSpotSub = document.querySelector('#panel-add .add-pick-btn:nth-child(2) .add-pick-sub');
+  if (pickerSpotSub) pickerSpotSub.textContent = mode==='life' ? '記錄要去的店家、地點' : '記錄想去的地方、地圖連結';
+
+  // Update add plan button in itinerary
+  const addDayBtn = document.querySelector('#panel-itinerary button');
+  if (addDayBtn) addDayBtn.textContent = mode==='life' ? '＋ 新增階段' : '＋ 新增天數';
+
+  // Update header sub if needed
+  const sub = (trip.regions||[]).join('・') || cfg.tripLabel;
+  document.getElementById('headerSub').textContent = sub;
+}
 // ══════════════════════════════════════════
 const SETTINGS_SHEET = 'Settings';
 let settings = {
