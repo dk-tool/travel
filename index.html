@@ -2146,11 +2146,40 @@ function renderItinerary(){
         const spot = spotItems.find(s=>s.id===entry.spotId);
         if (!spot) return '';
         const mapUrl = (spot.links&&spot.links[0]?.url) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name)}`;
+
+        // Check if today is a closed day based on spot note
+        let closedWarning = '';
+        if (spot.note && day.date) {
+          const weekDayNames = ['日','一','二','三','四','五','六'];
+          const d = new Date(day.date + 'T12:00:00');
+          const todayWeekDay = weekDayNames[d.getDay()];
+          const note = spot.note;
+          // Match patterns like 公休日：週三、公休：週六週日、定休日:水曜日 etc.
+          const closedMatch = note.match(/公休[日]?[：:]\s*([^\n]+)/i) ||
+                              note.match(/定休[日]?[：:]\s*([^\n]+)/i) ||
+                              note.match(/休館[日]?[：:]\s*([^\n]+)/i);
+          if (closedMatch) {
+            const closedDays = closedMatch[1];
+            if (closedDays.includes('週'+todayWeekDay) ||
+                closedDays.includes('周'+todayWeekDay) ||
+                (todayWeekDay==='日' && /週日|周日|星期日|每日|天天/.test(closedDays)) ||
+                closedDays.includes('無休') === false && closedDays.includes(todayWeekDay)) {
+              closedWarning = `<div style="background:#fef2f2;color:#c0392b;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:600;margin-top:4px;display:inline-flex;align-items:center;gap:4px">⚠️ 今日（週${todayWeekDay}）可能公休，請確認</div>`;
+            }
+          }
+          // Also check if note says 無休 (open every day)
+          if (note.includes('無休') || note.includes('全年無休')) {
+            closedWarning = '';
+          }
+        }
+
         return `<div class="day-spot-item">
           <div class="day-spot-num">${ei+1}</div>
           <div class="day-spot-body">
             <div class="day-spot-name">${spot.name}</div>
             <div class="day-spot-cat">${spotCatMap2[spot.category]||'📌'} ${spot.category}${spot.region?' · '+spot.region:''}</div>
+            ${spot.note?`<div class="day-spot-cat" style="color:var(--muted);white-space:pre-wrap;font-size:10px">${spot.note.slice(0,80)}${spot.note.length>80?'...':''}</div>`:''}
+            ${closedWarning}
           </div>
           <div class="day-spot-actions">
             <a class="day-spot-btn" href="${mapUrl}" target="_blank" rel="noopener">🗺</a>
