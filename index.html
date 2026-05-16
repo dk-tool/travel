@@ -1922,16 +1922,33 @@ let addToItinSpotId = null;
 
 function itinToRow(d){ return [d.id||'', d.label||'', d.date||'', d.note||'', JSON.stringify(d.entries||[]), 'v2']; }
 function rowToItin(row){
-    const dateRaw = row[2]||'';
-    let dateNorm = '';
-    if (dateRaw) {
-      const d = new Date(dateRaw.toString());
-      if (!isNaN(d.getTime())) {
-        dateNorm = d.toISOString().slice(0,10);
-      } else {
-        dateNorm = dateRaw.toString().slice(0,10).replace(/\//g,'-');
+  // Google Sheets may return date as Date object or string
+  let dateNorm = '';
+  const dateRaw = row[2];
+  if (dateRaw) {
+    if (dateRaw instanceof Date || (typeof dateRaw === 'object' && dateRaw !== null)) {
+      // Google Sheets Date object - use local date parts to avoid timezone issues
+      const d = new Date(dateRaw);
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      dateNorm = `${y}-${m}-${dd}`;
+    } else {
+      const s = dateRaw.toString().trim();
+      if (s.match(/^\d{4}-\d{2}-\d{2}/)) {
+        dateNorm = s.slice(0,10);
+      } else if (s) {
+        // Try parsing other formats
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth()+1).padStart(2,'0');
+          const dd = String(d.getDate()).padStart(2,'0');
+          dateNorm = `${y}-${m}-${dd}`;
+        }
       }
     }
+  }
   // Support old format (spotIds + items) and new format (entries)
   const raw4 = safeJSON(row[4],[]);
   const raw5 = safeJSON(row[5],[]);
