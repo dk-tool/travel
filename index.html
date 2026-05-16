@@ -2313,11 +2313,25 @@ function renderSettingsPanel() {
 function renderSettingChips(containerId, settingKey, iconMap) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  el.innerHTML = settings[settingKey].map((cat, i) =>
-    `<span class="setting-chip">${getIcon(cat,iconMap)} ${cat}
-      <button onclick="removeSettingItem('${settingKey}',${i})">×</button>
-    </span>`
+  const list = settings[settingKey] || [];
+  el.innerHTML = list.map((cat, i) =>
+    `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px dashed var(--border)">
+      <span style="flex:1;font-size:13px">${getIcon(cat,iconMap)} ${cat}</span>
+      <div style="display:flex;gap:3px">
+        <button onclick="moveSettingItem('${settingKey}',${i},-1)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:var(--paper);cursor:pointer;font-size:12px;${i===0?'opacity:0.3;pointer-events:none':''}">↑</button>
+        <button onclick="moveSettingItem('${settingKey}',${i},1)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:var(--paper);cursor:pointer;font-size:12px;${i===list.length-1?'opacity:0.3;pointer-events:none':''}">↓</button>
+        <button onclick="removeSettingItem('${settingKey}',${i})" style="width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:var(--paper);cursor:pointer;font-size:12px;color:var(--red)">×</button>
+      </div>
+    </div>`
   ).join('');
+}
+
+function moveSettingItem(settingKey, idx, dir) {
+  const list = settings[settingKey];
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= list.length) return;
+  [list[idx], list[newIdx]] = [list[newIdx], list[idx]];
+  renderSettingsPanel();
 }
 
 function addSettingItem(settingKey, inputId) {
