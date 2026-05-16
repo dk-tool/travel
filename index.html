@@ -2291,6 +2291,91 @@ function buildDayAddForm(dayId) {
   </button>`;
 }
 // Inline note edit
+// ── Day add form functions ──
+const dayItemTypeState = {};
+
+function setDayItemType(dayId, type) {
+  dayItemTypeState[dayId] = type;
+  ['place','transport','memo'].forEach(t => {
+    const btn    = document.getElementById('dtype_'+t+'_'+dayId);
+    const fields = document.getElementById('dayFields_'+t+'_'+dayId);
+    const active = t === type;
+    const colors = { place:'var(--teal)', transport:'var(--blue)', memo:'var(--gold)' };
+    const bgs    = { place:'#f0faf8', transport:'#e8f4fd', memo:'#fdf8e8' };
+    if (btn) {
+      btn.style.borderColor = active ? colors[t] : 'var(--border)';
+      btn.style.background  = active ? bgs[t] : 'var(--paper)';
+      btn.style.color       = active ? colors[t] : 'var(--muted)';
+      btn.style.fontWeight  = active ? '600' : '500';
+    }
+    if (fields) fields.style.display = active ? '' : 'none';
+  });
+}
+
+function toggleDayAddForm(dayId) {
+  const form = document.getElementById('dayAddForm_'+dayId);
+  const btn  = document.getElementById('dayAddBtn_'+dayId);
+  if (!form || !btn) return;
+  const show = form.style.display === 'none';
+  form.style.display = show ? '' : 'none';
+  btn.style.display  = show ? 'none' : 'flex';
+  if (show) {
+    setDayItemType(dayId, 'place');
+    document.getElementById('dayItemName_'+dayId)?.focus();
+  }
+}
+
+function cancelDayItem(dayId) {
+  const form = document.getElementById('dayAddForm_'+dayId);
+  const btn  = document.getElementById('dayAddBtn_'+dayId);
+  if (form) form.style.display = 'none';
+  if (btn)  btn.style.display  = 'flex';
+  ['dayItemName_','dayItemMemo_','dayItemUrl_','dayTransFrom_','dayTransTo_',
+   'dayTransTime_','dayTransFare_','dayTransNote_','dayMemoTitle_','dayMemoBody_']
+    .forEach(p => { const el = document.getElementById(p+dayId); if (el) el.value = ''; });
+}
+
+async function saveDayItem(dayId) {
+  const type = dayItemTypeState[dayId] || 'place';
+  let item;
+  if (type === 'transport') {
+    const from = document.getElementById('dayTransFrom_'+dayId)?.value.trim();
+    const to   = document.getElementById('dayTransTo_'+dayId)?.value.trim();
+    if (!from || !to) { alert('請填寫出發地和目的地'); return; }
+    item = { type:'transport', from, to,
+      mode: document.getElementById('dayTransMode_'+dayId)?.value || '🚅 電車',
+      time: document.getElementById('dayTransTime_'+dayId)?.value.trim(),
+      fare: document.getElementById('dayTransFare_'+dayId)?.value.trim(),
+      note: document.getElementById('dayTransNote_'+dayId)?.value.trim()
+    };
+  } else if (type === 'memo') {
+    const name = document.getElementById('dayMemoTitle_'+dayId)?.value.trim();
+    if (!name) { alert('請填寫備忘標題'); return; }
+    item = { type:'memo', name, body: document.getElementById('dayMemoBody_'+dayId)?.value.trim() };
+  } else {
+    const name = document.getElementById('dayItemName_'+dayId)?.value.trim();
+    if (!name) { alert('請填寫地點名稱'); return; }
+    item = { type:'place', name,
+      memo: document.getElementById('dayItemMemo_'+dayId)?.value.trim(),
+      url:  document.getElementById('dayItemUrl_'+dayId)?.value.trim()
+    };
+  }
+  const day = days.find(d=>d.id===dayId);
+  if (!day) return;
+  if (!day.entries) day.entries = [];
+  day.entries.push(item);
+  cancelDayItem(dayId);
+  renderItinerary();
+  showSync('⟳ 儲存...','var(--muted)');
+  const row = itinRowMap[day.id];
+  if (row) {
+    isSavingItin = true;
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+    finally { isSavingItin = false; }
+  }
+}
+
 // ── Entry functions (unified move/edit/remove) ──
 async function moveEntry(dayId, idx, dir) {
   const day = days.find(d=>d.id===dayId);
