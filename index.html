@@ -800,8 +800,12 @@ function rowToSpot(row){const i={};SPOT_COLS.forEach((k,n)=>{if(k==='links')i[k]
 // TRIPS
 // ══════════════════════════════════════════
 async function loadTrips(force=false){
-  if(!force){const c=loadCache(CK_TRIPS);if(c){trips=c.data;renderTripList();showSync('🔄 同步...','var(--muted)');_fetchTrips().catch(()=>showSync('⚠️ 離線','var(--gold)'));return;}}
-  showSync('⟳ 載入...','var(--muted)');await _fetchTrips();
+  if(!force){
+    const c=loadCache(CK_TRIPS);
+    if(c&&c.data&&c.data.length){trips=c.data;renderTripList();}
+  }
+  showSync('⟳ 同步...','var(--muted)');
+  await _fetchTrips();
 }
 async function _fetchTrips(){
   try{
@@ -880,15 +884,21 @@ async function selectTrip(id){
   loadRates();
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
 
+  // 先清空狀態避免殘留舊資料
+  shopItems=[]; shopRowMap={};
+  spotItems=[]; spotRowMap={};
+  budgetItems=[]; budgetRowMap={};
+  days=[]; itinRowMap={};
+
   // 立刻從 cache 渲染（同步）
   const sc = loadCache(ck_shop(currentTrip.id));
   const spc = loadCache(ck_spot(currentTrip.id));
   const bc = loadCache('jp2_budget_'+currentTrip.id);
   const ic = loadCache('jp2_itin_'+currentTrip.id);
-  if(sc){shopItems=sc.data;shopRowMap=sc.rowMap||{};renderShop();}
-  if(spc){spotItems=spc.data;spotRowMap=spc.rowMap||{};renderSpots();}
-  if(bc){budgetItems=bc.data;budgetRowMap=bc.rowMap||{};renderBudget();}
-  if(ic){days=ic.data;itinRowMap=ic.rowMap||{};renderItinerary();}
+  if(sc){shopItems=sc.data||[];shopRowMap=sc.rowMap||{};renderShop();}
+  if(spc){spotItems=spc.data||[];spotRowMap=spc.rowMap||{};renderSpots();}
+  if(bc){budgetItems=bc.data||[];budgetRowMap=bc.rowMap||{};renderBudget();}
+  if(ic){days=ic.data||[];itinRowMap=ic.rowMap||{};renderItinerary();}
 
   // 背景同步
   showSync('🔄 同步中...', 'var(--muted)');
@@ -912,8 +922,12 @@ function goToTrips(){
 // ══════════════════════════════════════════
 async function loadShopItems(force=false){
   if(!currentTrip)return;
-  if(!force){const c=loadCache(ck_shop(currentTrip.id));if(c){shopItems=c.data;shopRowMap=c.rowMap||{};renderShop();showSync('🔄 同步...','var(--muted)');_fetchShop().catch(()=>showSync('⚠️ 離線','var(--gold)'));return;}}
-  showSync('⟳ 載入...','var(--muted)');await _fetchShop();
+  if(!force){
+    const c=loadCache(ck_shop(currentTrip.id));
+    if(c){shopItems=c.data||[];shopRowMap=c.rowMap||{};renderShop();}
+  }
+  // 總是從雲端同步（cache 只是初始顯示用）
+  await _fetchShop();
 }
 async function _fetchShop(){
   if(!currentTrip)return;
@@ -923,7 +937,8 @@ async function _fetchShop(){
     shopRowMap={};shopItems=[];
     for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToShop(r);if(item.id){shopItems.push(item);shopRowMap[item.id]=i+1;}}
     saveCache(ck_shop(currentTrip.id),shopItems,{rowMap:shopRowMap});
-    showSync(`✅ ${shopItems.length}件`,'var(--sage)');renderShop();
+    showSync(`✅ ${shopItems.length}件`,'var(--sage)');
+    renderShop(); // 雲端資料回來後強制覆蓋畫面
   }catch(e){showSync('❌ '+e.message,'var(--red)');}
 }
 
@@ -997,7 +1012,10 @@ async function saveShopEdit(){
 // ══════════════════════════════════════════
 async function loadSpotItems(force=false){
   if(!currentTrip)return;
-  if(!force){const c=loadCache(ck_spot(currentTrip.id));if(c){spotItems=c.data;spotRowMap=c.rowMap||{};renderSpots();showSync('🔄 同步...','var(--muted)');_fetchSpot().catch(()=>showSync('⚠️ 離線','var(--gold)'));return;}}
+  if(!force){
+    const c=loadCache(ck_spot(currentTrip.id));
+    if(c){spotItems=c.data||[];spotRowMap=c.rowMap||{};renderSpots();}
+  }
   await _fetchSpot();
 }
 async function _fetchSpot(){
@@ -1397,7 +1415,10 @@ function syncEditCustomCurrency(){
 // Load/Fetch
 async function loadBudgetItems(force=false){
   if(!currentTrip)return;
-  if(!force){const c=loadCache('jp2_budget_'+currentTrip.id);if(c){budgetItems=c.data;budgetRowMap=c.rowMap||{};renderBudget();_fetchBudget().catch(()=>{});return;}}
+  if(!force){
+    const c=loadCache('jp2_budget_'+currentTrip.id);
+    if(c){budgetItems=c.data||[];budgetRowMap=c.rowMap||{};renderBudget();}
+  }
   await _fetchBudget();
 }
 async function _fetchBudget(){
@@ -1736,7 +1757,10 @@ function rowToItin(row){ return { id:parseInt(row[0])||0, label:row[1]||'', date
 async function loadItinerary(force=false){
   if(!currentTrip) return;
   const ck='jp2_itin_'+currentTrip.id;
-  if(!force){ const c=loadCache(ck); if(c){ days=c.data; itinRowMap=c.rowMap||{}; renderItinerary(); _fetchItin().catch(()=>{}); return; } }
+  if(!force){
+    const c=loadCache(ck);
+    if(c){days=c.data||[];itinRowMap=c.rowMap||{};renderItinerary();}
+  }
   await _fetchItin();
 }
 async function _fetchItin(){
