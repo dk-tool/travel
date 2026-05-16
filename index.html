@@ -2260,6 +2260,87 @@ function buildDayAddForm(dayId) {
   </button>`;
 }
 // Inline note edit
+// ── Entry functions (unified move/edit/remove) ──
+async function moveEntry(dayId, idx, dir) {
+  const day = days.find(d=>d.id===dayId);
+  if (!day || !day.entries) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= day.entries.length) return;
+  [day.entries[idx], day.entries[newIdx]] = [day.entries[newIdx], day.entries[idx]];
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if (row) {
+    isSavingItin = true;
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+    finally { isSavingItin = false; }
+  }
+}
+async function removeEntry(dayId, idx) {
+  const day = days.find(d=>d.id===dayId);
+  if (!day) return;
+  day.entries.splice(idx, 1);
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if (row) {
+    isSavingItin = true;
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+    finally { isSavingItin = false; }
+  }
+}
+function toggleEditEntry(dayId, idx) {
+  const body = document.getElementById('dayItemBody_'+dayId+'_'+idx);
+  const form = document.getElementById('dayItemEditForm_'+dayId+'_'+idx);
+  if (!body || !form) return;
+  const editing = form.style.display !== 'none';
+  body.style.display = editing ? '' : 'none';
+  form.style.display = editing ? 'none' : '';
+}
+function cancelEditEntry(dayId, idx) {
+  const body = document.getElementById('dayItemBody_'+dayId+'_'+idx);
+  const form = document.getElementById('dayItemEditForm_'+dayId+'_'+idx);
+  if (body) body.style.display = '';
+  if (form) form.style.display = 'none';
+}
+async function saveEditEntry(dayId, idx) {
+  const day = days.find(d=>d.id===dayId);
+  if (!day || !day.entries) return;
+  const entry = day.entries[idx];
+  const type = entry.type || 'place';
+  let updated;
+  if (type === 'transport') {
+    const from = document.getElementById('editItemFrom_'+dayId+'_'+idx)?.value.trim();
+    const to   = document.getElementById('editItemTo_'+dayId+'_'+idx)?.value.trim();
+    if (!from || !to) { alert('請填寫出發地和目的地'); return; }
+    updated = { ...entry, from, to,
+      time: document.getElementById('editItemTime_'+dayId+'_'+idx)?.value.trim(),
+      fare: document.getElementById('editItemFare_'+dayId+'_'+idx)?.value.trim(),
+      note: document.getElementById('editItemNote_'+dayId+'_'+idx)?.value.trim()
+    };
+  } else if (type === 'memo') {
+    const name = document.getElementById('editItemName_'+dayId+'_'+idx)?.value.trim();
+    if (!name) { alert('標題不能為空'); return; }
+    updated = { ...entry, name, body: document.getElementById('editItemBody_'+dayId+'_'+idx)?.value.trim() };
+  } else {
+    const name = document.getElementById('editItemName_'+dayId+'_'+idx)?.value.trim();
+    if (!name) { alert('名稱不能為空'); return; }
+    updated = { ...entry, name,
+      memo: document.getElementById('editItemMemo_'+dayId+'_'+idx)?.value.trim(),
+      url:  document.getElementById('editItemUrl_'+dayId+'_'+idx)?.value.trim()
+    };
+  }
+  day.entries[idx] = updated;
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if (row) {
+    isSavingItin = true;
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+    finally { isSavingItin = false; }
+  }
+}
+
 function startEditDayNote(dayId){
   const span = document.getElementById('dayNote_'+dayId);
   if(!span) return;
