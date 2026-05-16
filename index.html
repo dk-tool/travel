@@ -2178,7 +2178,6 @@ function renderItinerary(){
           <div class="day-spot-body">
             <div class="day-spot-name">${spot.name}</div>
             <div class="day-spot-cat">${spotCatMap2[spot.category]||'📌'} ${spot.category}${spot.region?' · '+spot.region:''}</div>
-            ${spot.note?`<div class="day-spot-cat" style="color:var(--muted);white-space:pre-wrap;font-size:10px">${spot.note.slice(0,80)}${spot.note.length>80?'...':''}</div>`:''}
             ${closedWarning}
           </div>
           <div class="day-spot-actions">
