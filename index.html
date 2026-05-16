@@ -1965,11 +1965,15 @@ async function loadItinerary(force=false){
 }
 let isSavingItin = false; // prevent fetch from overwriting during save
 
+let itinFetchId = 0; // request ID to prevent stale overwrites
+
 async function _fetchItin(){
   if(!currentTrip) return;
+  const myId = ++itinFetchId;
   try{
     const rows = await gsGet(currentTrip.id+'_itinerary');
-    if(isSavingItin) return; // 有儲存進行中，不覆蓋
+    // If a newer fetch started, or we're currently saving, discard this result
+    if(myId !== itinFetchId || isSavingItin) return;
     itinRowMap={}; days=[];
     for(let i=1;i<rows.length;i++){ const r=rows[i]; if(!r||!r[0]) continue; const d=rowToItin(r); if(d.id){ days.push(d); itinRowMap[d.id]=i+1; } }
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
@@ -2105,6 +2109,7 @@ async function saveDayDate(dayId, date){
     return;
   }
   isSavingItin = true;
+  itinFetchId++; // invalidate any pending _fetchItin
   try{
     await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
