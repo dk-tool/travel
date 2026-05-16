@@ -1158,7 +1158,6 @@ function renderShop(){
             ${item.region?`<span>📍${item.region}</span>`:''}
             ${item.budget?`<span>💴¥${parseInt(item.budget).toLocaleString()}</span>`:''}
             ${stars?`<span>${stars}</span>`:''}
-            <span style="margin-left:auto;opacity:.5">${fmtDate(item.createdAt)}</span>
           </div>
           ${item.note?`<div class="item-note">${item.note}</div>`:''}
           ${photosHtml}
@@ -1226,7 +1225,6 @@ function renderSpots(){
           <div class="item-meta">
             ${item.region?`<span>📍${item.region}</span>`:''}
             ${stars?`<span>${stars}</span>`:''}
-            <span style="margin-left:auto;opacity:.5">${fmtDate(item.createdAt)}</span>
           </div>
           ${item.note?`<div class="item-note">${item.note}</div>`:''}
           ${inItinBadge}
