@@ -899,20 +899,41 @@ async function _fetchTrips(){
 
 function renderTripList(){
   const el=document.getElementById('tripCards');
-  if(!trips.length){el.innerHTML=`<div class="empty-state"><div class="emoji">✈️</div><p>還沒有旅程，點下方新增！</p></div>`;return;}
-  el.innerHTML=trips.map(t=>`
+  if(!trips.length){
+    el.innerHTML=`<div class="empty-state"><div class="emoji">✈️</div><p>還沒有任何計畫，點下方新增！</p></div>`;
+    return;
+  }
+
+  const travelTrips = trips.filter(t=>(t.mode||'travel')==='travel');
+  const lifeTrips   = trips.filter(t=>t.mode==='life');
+
+  const renderCards = (list) => list.map(t=>`
     <div class="trip-card" onclick="selectTrip('${t.id}')">
       <div class="trip-icon">${t.icon}</div>
       <div class="trip-body">
         <div class="trip-name">${t.name}</div>
         <div class="trip-regions">
-          <span style="background:${t.mode==='life'?'#e0f2f1':'#fdf5f2'};color:${t.mode==='life'?'var(--teal)':'var(--rust)'};border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">${t.mode==='life'?'🏠 生活':'✈️ 旅遊'}</span>
           ${(t.regions||[]).map(r=>`<span class="trip-region-tag">${r}</span>`).join('')}
         </div>
         ${t.date?`<div class="trip-date">📅 ${t.date}</div>`:''}
       </div>
       <div class="trip-del" onclick="event.stopPropagation();deleteTrip('${t.id}')">🗑</div>
     </div>`).join('');
+
+  el.innerHTML = `
+    ${travelTrips.length ? `
+      <div style="font-size:11px;font-weight:700;color:var(--rust);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span>✈️ 旅遊</span><div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div style="margin-bottom:16px">${renderCards(travelTrips)}</div>
+    ` : ''}
+    ${lifeTrips.length ? `
+      <div style="font-size:11px;font-weight:700;color:var(--teal);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span>🏠 生活</span><div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div style="margin-bottom:16px">${renderCards(lifeTrips)}</div>
+    ` : ''}
+  `;
 }
 
 async function saveNewTrip(){
