@@ -742,20 +742,6 @@ textarea{resize:vertical;min-height:60px;}
   </div>
 </div>
 
-<!-- MODAL: Opening Hours -->
-<div class="modal-backdrop" id="hoursBackdrop" onclick="closeModal('hoursBackdrop',event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h3 id="hoursModalTitle">🕐 營業時間</h3>
-    <div id="hoursModalBody" style="font-size:13px;line-height:1.8;color:var(--ink);white-space:pre-wrap;min-height:60px;padding:12px;background:var(--paper);border-radius:6px;border:1px solid var(--border)"></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">⚠️ 資料來自 AI，請以實際為準</p>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('hoursBackdrop')">關閉</button>
-      <button class="btn btn-teal" id="hoursModalSave" style="flex:2;margin-top:0">💾 存入備註</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: Add to Itinerary -->
 <div class="modal-backdrop" id="addToItinBackdrop" onclick="closeModal('addToItinBackdrop',event)">
   <div class="modal">
@@ -1869,25 +1855,13 @@ function fileToBase64(file) {
 // ══════════════════════════════════════════
 // QUERY OPENING HOURS
 // ══════════════════════════════════════════
-async function queryHours(spotId) {
+function queryHours(spotId) {
   const spot = spotItems.find(s=>s.id===spotId);
   if (!spot) return;
-
-  document.getElementById('hoursModalTitle').textContent = `🕐 ${spot.name}`;
-  document.getElementById('hoursModalBody').textContent = '⟳ 查詢中...';
-  document.getElementById('hoursModalSave').onclick = () => saveHoursToNote(spotId);
-  document.getElementById('hoursBackdrop').classList.add('open');
-
-  try {
-    const result = await gasCall({
-      action: 'queryHours',
-      name: spot.name,
-      region: spot.region || (currentTrip?.regions||[]).join('・') || '日本'
-    });
-    document.getElementById('hoursModalBody').textContent = result.hours || '查無資料';
-  } catch(e) {
-    document.getElementById('hoursModalBody').textContent = '❌ 查詢失敗：' + e.message;
-  }
+  const query = encodeURIComponent(spot.name + (spot.region ? ' ' + spot.region : '') + ' 營業時間');
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + (spot.region ? ' ' + spot.region : ''))}`;
+  // Open Google Maps directly - most accurate hours info
+  window.open(mapsUrl, '_blank');
 }
 
 function saveHoursToNote(spotId) {
