@@ -1283,10 +1283,10 @@ function renderSpots(){
   });
 
   // Find which day each spot is in
-  const spotDayMap = {}; // spotId → day label
+  const spotDayMap = {};
   days.forEach(day => {
-    day.spotIds.forEach(sid => {
-      if (!spotDayMap[sid]) spotDayMap[sid] = day.label;
+    (day.entries||[]).filter(e=>e.type==='spot').forEach(e => {
+      if (!spotDayMap[e.spotId]) spotDayMap[e.spotId] = day.label;
     });
   });
 
