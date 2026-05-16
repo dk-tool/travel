@@ -1916,11 +1916,11 @@ function saveHoursToNote(spotId) {
 // Stored as one row per day in trip_xxx_itinerary sheet
 // ITIN_COLS: id, label, date, note, spotIds (JSON array of spotId)
 
-const ITIN_COLS = ['id','label','date','note','entries'];
+const ITIN_COLS = ['id','label','date','note','entries','_v2'];
 let days = [], itinRowMap = {};
 let addToItinSpotId = null;
 
-function itinToRow(d){ return ITIN_COLS.map(k => k==='entries' ? JSON.stringify(d.entries||[]) : d[k]||''); }
+function itinToRow(d){ return [d.id||'', d.label||'', d.date||'', d.note||'', JSON.stringify(d.entries||[]), 'v2']; }
 function rowToItin(row){
     const dateRaw = row[2]||'';
     let dateNorm = '';
@@ -1935,9 +1935,10 @@ function rowToItin(row){
   // Support old format (spotIds + items) and new format (entries)
   const raw4 = safeJSON(row[4],[]);
   const raw5 = safeJSON(row[5],[]);
+  const isV2 = row[5] === 'v2'; // new format marker
   let entries;
-  // New format: array of objects with type field
-  if (Array.isArray(raw4) && raw4.length > 0 && typeof raw4[0] === 'object' && raw4[0] !== null && 'type' in raw4[0]) {
+  if (isV2 || (Array.isArray(raw4) && raw4.length > 0 && typeof raw4[0] === 'object' && raw4[0] !== null && 'type' in raw4[0])) {
+    // New format: entries array
     entries = raw4;
   } else {
     // Old format: raw4 = spotIds (numbers), raw5 = items (objects)
