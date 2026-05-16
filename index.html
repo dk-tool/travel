@@ -1798,16 +1798,15 @@ function saveHoursToNote(spotId) {
   if (!spot) return;
   const hours = document.getElementById('hoursModalBody').textContent;
   if (!hours || hours.startsWith('❌') || hours.startsWith('⟳')) return;
-  // Append to note
-  const newNote = spot.note ? spot.note + '\n' + hours : hours;
-  spot.note = newNote;
+  // Replace note entirely with hours (cleaner)
+  spot.note = hours;
   renderSpots();
   closeModal('hoursBackdrop');
-  // Save to sheet
+  showSync('⟳ 儲存...','var(--muted)');
   const row = spotRowMap[spot.id];
   if (row) {
     gsUpdate(currentTrip.id+'_spots', row, spotToRow(spot))
-      .then(() => saveCache(ck_spot(currentTrip.id), spotItems, {rowMap:spotRowMap}))
+      .then(() => { saveCache(ck_spot(currentTrip.id), spotItems, {rowMap:spotRowMap}); showSync('✅','var(--sage)'); })
       .catch(e => showSync('❌ '+e.message, 'var(--red)'));
   }
 }
