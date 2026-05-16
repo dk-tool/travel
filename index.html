@@ -316,36 +316,77 @@ textarea{resize:vertical;min-height:60px;}
     <div id="panel-settings" class="panel">
       <div class="form-card">
         <div class="form-title">⚙️ 自訂選項設定</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">設定後所有使用者共用，儲存到 Google Sheets。</p>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px">儲存到 Google Sheets，所有使用者共用。</p>
 
-        <div class="form-group">
-          <label>🛍 購物分類</label>
-          <div id="settings-shop-cats" style="margin-bottom:6px"></div>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="new-shop-cat" placeholder="新增分類..." style="flex:1">
-            <button onclick="addSettingItem('shopCats','new-shop-cat')" class="btn btn-primary" style="width:60px;margin-top:0;padding:0">＋</button>
+        <!-- Mode tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:18px">
+          <button id="settings-tab-travel" onclick="switchSettingsTab('travel')"
+            style="flex:1;padding:8px;border:2px solid var(--rust);border-radius:6px;background:#fdf5f2;font-size:13px;font-weight:600;color:var(--rust);cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
+            ✈️ 旅遊設定
+          </button>
+          <button id="settings-tab-life" onclick="switchSettingsTab('life')"
+            style="flex:1;padding:8px;border:2px solid var(--border);border-radius:6px;background:var(--paper);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
+            🏠 生活設定
+          </button>
+        </div>
+
+        <!-- Travel settings -->
+        <div id="settings-travel">
+          <div class="form-group">
+            <label>🛍 購物分類</label>
+            <div id="settings-shop-cats" style="margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="new-shop-cat" placeholder="新增分類..." style="flex:1">
+              <button onclick="addSettingItem('shopCats','new-shop-cat')" class="btn btn-primary" style="width:60px;margin-top:0;padding:0">＋</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>📍 景點類型</label>
+            <div id="settings-spot-cats" style="margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="new-spot-cat" placeholder="新增類型..." style="flex:1">
+              <button onclick="addSettingItem('spotCats','new-spot-cat')" class="btn btn-teal" style="width:60px;margin-top:0;padding:0">＋</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>💰 記帳分類</label>
+            <div id="settings-budget-cats" style="margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="new-budget-cat" placeholder="新增分類..." style="flex:1">
+              <button onclick="addSettingItem('budgetCats','new-budget-cat')" class="btn" style="width:60px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>📍 景點類型</label>
-          <div id="settings-spot-cats" style="margin-bottom:6px"></div>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="new-spot-cat" placeholder="新增類型..." style="flex:1">
-            <button onclick="addSettingItem('spotCats','new-spot-cat')" class="btn btn-teal" style="width:60px;margin-top:0;padding:0">＋</button>
+        <!-- Life settings -->
+        <div id="settings-life" style="display:none">
+          <div class="form-group">
+            <label>🛒 採購清單分類</label>
+            <div id="settings-life-shop-cats" style="margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="new-life-shop-cat" placeholder="新增分類..." style="flex:1">
+              <button onclick="addSettingItem('lifeShopCats','new-life-shop-cat')" class="btn btn-primary" style="width:60px;margin-top:0;padding:0">＋</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>📌 待辦地點類型</label>
+            <div id="settings-life-spot-cats" style="margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="new-life-spot-cat" placeholder="新增類型..." style="flex:1">
+              <button onclick="addSettingItem('lifeSpotCats','new-life-spot-cat')" class="btn btn-teal" style="width:60px;margin-top:0;padding:0">＋</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>💰 花費分類</label>
+            <div id="settings-life-budget-cats" style="margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="new-life-budget-cat" placeholder="新增分類..." style="flex:1">
+              <button onclick="addSettingItem('lifeBudgetCats','new-life-budget-cat')" class="btn" style="width:60px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>💰 記帳分類</label>
-          <div id="settings-budget-cats" style="margin-bottom:6px"></div>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="new-budget-cat" placeholder="新增分類..." style="flex:1">
-            <button onclick="addSettingItem('budgetCats','new-budget-cat')" class="btn" style="width:60px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()" style="margin-top:8px">💾 儲存設定</button>
+        <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()" style="margin-top:16px">💾 儲存設定</button>
       </div>
     </div>
     <div id="panel-itinerary" class="panel">
@@ -2151,12 +2192,34 @@ function applyModeToUI(trip) {
   document.getElementById('headerSub').textContent = sub;
 }
 // ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
 const SETTINGS_SHEET = 'Settings';
 let settings = {
-  shopCats: ['食品','服飾','美妝','工藝品','紀念品','其他'],
-  spotCats: ['自然','歷史','美食','購物街','體驗','其他'],
-  budgetCats: ['餐飲','交通','住宿','購物','門票','其他']
+  shopCats:       ['食品','服飾','美妝','工藝品','紀念品','其他'],
+  spotCats:       ['自然','歷史','美食','購物街','體驗','其他'],
+  budgetCats:     ['餐飲','交通','住宿','購物','門票','其他'],
+  lifeShopCats:   ['家電','家具','裝潢','日用品','食材','其他'],
+  lifeSpotCats:   ['賣場','建材行','政府機關','銀行','診所','其他'],
+  lifeBudgetCats: ['建材','家電','家具','雜費','餐飲','其他']
 };
+
+let currentSettingsTab = 'travel';
+
+function switchSettingsTab(tab) {
+  currentSettingsTab = tab;
+  document.getElementById('settings-travel').style.display = tab==='travel' ? '' : 'none';
+  document.getElementById('settings-life').style.display   = tab==='life'   ? '' : 'none';
+  const tBtn = document.getElementById('settings-tab-travel');
+  const lBtn = document.getElementById('settings-tab-life');
+  tBtn.style.borderColor = tab==='travel' ? 'var(--rust)' : 'var(--border)';
+  tBtn.style.background  = tab==='travel' ? '#fdf5f2' : 'var(--paper)';
+  tBtn.style.color       = tab==='travel' ? 'var(--rust)' : 'var(--muted)';
+  lBtn.style.borderColor = tab==='life' ? 'var(--teal)' : 'var(--border)';
+  lBtn.style.background  = tab==='life' ? '#f0faf8' : 'var(--paper)';
+  lBtn.style.color       = tab==='life' ? 'var(--teal)' : 'var(--muted)';
+  renderSettingsPanel();
+}
 
 async function loadSettings() {
   try {
@@ -2171,14 +2234,27 @@ async function loadSettings() {
   applySettings();
 }
 
+function getActiveSettings() {
+  const mode = currentTrip?.mode || 'travel';
+  return mode === 'life' ? {
+    shopCats:   settings.lifeShopCats,
+    spotCats:   settings.lifeSpotCats,
+    budgetCats: settings.lifeBudgetCats
+  } : {
+    shopCats:   settings.shopCats,
+    spotCats:   settings.spotCats,
+    budgetCats: settings.budgetCats
+  };
+}
+
 function applySettings() {
-  // Update all dropdowns with current settings
-  updateSelectOptions('inp-cat', settings.shopCats, shopCatIcons);
-  updateSelectOptions('es-cat', settings.shopCats, shopCatIcons);
-  updateSelectOptions('spot-cat', settings.spotCats, spotCatIcons);
-  updateSelectOptions('ep-cat', settings.spotCats, spotCatIcons);
-  updateSelectOptions('bud-cat', settings.budgetCats, budgetCatIcons);
-  updateSelectOptions('eb-cat', settings.budgetCats, budgetCatIcons);
+  const s = getActiveSettings();
+  updateSelectOptions('inp-cat',  s.shopCats,   shopCatIcons);
+  updateSelectOptions('es-cat',   s.shopCats,   shopCatIcons);
+  updateSelectOptions('spot-cat', s.spotCats,   spotCatIcons);
+  updateSelectOptions('ep-cat',   s.spotCats,   spotCatIcons);
+  updateSelectOptions('bud-cat',  s.budgetCats, budgetCatIcons);
+  updateSelectOptions('eb-cat',   s.budgetCats, budgetCatIcons);
   renderSettingsPanel();
 }
 
@@ -2199,10 +2275,15 @@ function updateSelectOptions(elId, cats, iconMap) {
 }
 
 function renderSettingsPanel() {
-  renderSettingChips('settings-shop-cats', 'shopCats', shopCatIcons);
-  renderSettingChips('settings-spot-cats', 'spotCats', spotCatIcons);
+  // Travel settings chips
+  renderSettingChips('settings-shop-cats',   'shopCats',   shopCatIcons);
+  renderSettingChips('settings-spot-cats',   'spotCats',   spotCatIcons);
   renderSettingChips('settings-budget-cats', 'budgetCats', budgetCatIcons);
-  // Also update filter buttons
+  // Life settings chips
+  renderSettingChips('settings-life-shop-cats',   'lifeShopCats',   shopCatIcons);
+  renderSettingChips('settings-life-spot-cats',   'lifeSpotCats',   spotCatIcons);
+  renderSettingChips('settings-life-budget-cats', 'lifeBudgetCats', budgetCatIcons);
+  // Update filter buttons based on current trip mode
   updateShopFilters();
   updateSpotFilters();
   updateBudgetFilters();
@@ -2257,26 +2338,30 @@ async function saveSettings() {
 function updateShopFilters() {
   const el = document.getElementById('shopFilterBtns');
   if (!el) return;
+  const cats = getActiveSettings().shopCats;
   el.innerHTML = `<button class="filter-btn active" onclick="setShopFilter('all')">全部</button>
     <button class="filter-btn" onclick="setShopFilter('未購買')">未購買</button>
     <button class="filter-btn" onclick="setShopFilter('已購買')">已購買</button>
-    ${settings.shopCats.map(c=>`<button class="filter-btn" onclick="setShopFilter('${c}')">${c}</button>`).join('')}`;
+    ${cats.map(c=>`<button class="filter-btn" onclick="setShopFilter('${c}')">${c}</button>`).join('')}`;
 }
 
 function updateSpotFilters() {
   const el = document.getElementById('spotFilterBtns');
   if (!el) return;
+  const cats = getActiveSettings().spotCats;
+  const mode = currentTrip?.mode || 'travel';
   el.innerHTML = `<button class="filter-btn active" onclick="setSpotFilter('all')">全部</button>
-    <button class="filter-btn" onclick="setSpotFilter('未去')">未去</button>
-    <button class="filter-btn" onclick="setSpotFilter('已去')">已去</button>
-    ${settings.spotCats.map(c=>`<button class="filter-btn" onclick="setSpotFilter('${c}')">${c}</button>`).join('')}`;
+    <button class="filter-btn" onclick="setSpotFilter('未${mode==='life'?'完成':'去'}')">未${mode==='life'?'完成':'去'}</button>
+    <button class="filter-btn" onclick="setSpotFilter('已${mode==='life'?'完成':'去'}')">已${mode==='life'?'完成':'去'}</button>
+    ${cats.map(c=>`<button class="filter-btn" onclick="setSpotFilter('${c}')">${c}</button>`).join('')}`;
 }
 
 function updateBudgetFilters() {
   const el = document.getElementById('budgetFilterBtns');
   if (!el) return;
+  const cats = getActiveSettings().budgetCats;
   el.innerHTML = `<button class="filter-btn active" onclick="setBudgetFilter('all')">全部</button>
-    ${settings.budgetCats.map(c=>`<button class="filter-btn" onclick="setBudgetFilter('${c}')">${getIcon(c,budgetCatIcons)} ${c}</button>`).join('')}`;
+    ${cats.map(c=>`<button class="filter-btn" onclick="setBudgetFilter('${c}')">${getIcon(c,budgetCatIcons)} ${c}</button>`).join('')}`;
 }
 
 // ══════════════════════════════════════════
