@@ -2306,6 +2306,17 @@ function cancelEditDayItem(dayId, idx) {
   if (body) body.style.display = '';
   if (form) form.style.display = 'none';
 }
+async function removeDayItem(dayId, idx) {
+  const day = days.find(d=>d.id===dayId);
+  if (!day) return;
+  day.items.splice(idx, 1);
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if (row) {
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+  }
+}
 async function saveEditDayItem(dayId, idx) {
   const day = days.find(d=>d.id===dayId);
   if (!day || !day.items) return;
@@ -2341,16 +2352,6 @@ async function saveEditDayItem(dayId, idx) {
   const row = itinRowMap[day.id];
   if (row) {
     try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-  }
-}
-  const day = days.find(d=>d.id===dayId);
-  if (!day) return;
-  day.items.splice(idx, 1);
-  renderItinerary();
-  const row = itinRowMap[day.id];
-  if (row) {
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
     catch(e) { showSync('❌ '+e.message,'var(--red)'); }
   }
 }
