@@ -2015,24 +2015,28 @@ async function sortDaysByDate(){
     if(!b.date) return -1;
     return a.date.localeCompare(b.date);
   });
-  // Re-label Day 1, Day 2...
   days.forEach((d,i) => d.label = 'Day '+(i+1));
   renderItinerary();
   showSync('⟳ 儲存排序...','var(--muted)');
-  // Save all rows
   isSavingItin = true;
   itinFetchId++;
   try{
-    for(const day of days){
-      const row = itinRowMap[day.id];
-      if(row) await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+    const sheet = currentTrip.id+'_itinerary';
+    // Get current row count and delete all data rows from bottom up
+    const rows = await gsGet(sheet);
+    for(let i = rows.length; i >= 2; i--){
+      await gsDel(sheet, i);
     }
-    saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
-    showSync('✅ 排序完成','var(--sage)');
-  }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
-  finally{
+    // Re-append in sorted order
+    for(const day of days){
+      await gsAppend(sheet, itinToRow(day));
+    }
+    showSync('✅ 排序已儲存','var(--sage)');
     isSavingItin = false;
-    await _fetchItin(); // re-fetch to confirm
+    await _fetchItin();
+  }catch(e){
+    showSync('❌ '+e.message,'var(--red)');
+    isSavingItin = false;
   }
 }
 
