@@ -1305,7 +1305,7 @@ function renderSpots(){
     const searchQ=encodeURIComponent(item.name+(item.region?' '+item.region:''));
 
     // Which days is this spot scheduled in?
-    const inDays = days.filter(d=>d.spotIds.includes(item.id));
+    const inDays = days.filter(d=>(d.entries||[]).some(e=>e.type==='spot'&&e.spotId===item.id));
     const inItinBadge = inDays.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
           ${inDays.map(d=>`<span style="background:#e0f2f1;color:var(--teal);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600">📅 ${d.date||d.label}</span>`).join('')}
@@ -1913,15 +1913,11 @@ function saveHoursToNote(spotId) {
 // Stored as one row per day in trip_xxx_itinerary sheet
 // ITIN_COLS: id, label, date, note, spotIds (JSON array of spotId)
 
-const ITIN_COLS = ['id','label','date','note','spotIds','items'];
+const ITIN_COLS = ['id','label','date','note','entries'];
 let days = [], itinRowMap = {};
 let addToItinSpotId = null;
 
-function itinToRow(d){ return ITIN_COLS.map(k => {
-  if (k==='spotIds') return JSON.stringify(d.spotIds||[]);
-  if (k==='items') return JSON.stringify(d.items||[]);
-  return d[k]||'';
-}); }
+function itinToRow(d){ return ITIN_COLS.map(k => k==='entries' ? JSON.stringify(d.entries||[]) : d[k]||''); }
 function rowToItin(row){
     const dateRaw = row[2]||'';
     let dateNorm = '';
@@ -1933,7 +1929,22 @@ function rowToItin(row){
         dateNorm = dateRaw.toString().slice(0,10).replace(/\//g,'-');
       }
     }
-  return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', spotIds:safeJSON(row[4],[]), items:safeJSON(row[5],[]) };
+  // Support old format (spotIds + items) and new format (entries)
+  const raw4 = safeJSON(row[4],[]);
+  const raw5 = safeJSON(row[5],[]);
+  let entries;
+  if (row[4] && raw4.length > 0 && typeof raw4[0] === 'object' && raw4[0].type) {
+    // New format: entries array
+    entries = raw4;
+  } else if (row[4] || row[5]) {
+    // Old format: migrate spotIds + items to entries
+    const spotEntries = raw4.map ? raw4.filter(id => id).map(id => ({type:'spot', spotId: typeof id === 'number' ? id : parseInt(id)})) : [];
+    const itemEntries = raw5.map ? raw5.map(item => ({...item, type: item.type||'place'})) : [];
+    entries = [...spotEntries, ...itemEntries];
+  } else {
+    entries = [];
+  }
+  return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', entries };
 }
 
 // Load
@@ -1965,7 +1976,7 @@ async function _fetchItin(){
 // Add day
 async function addDay(){
   const n = days.length+1;
-  const d = { id:Date.now(), label:'Day '+n, date:'', note:'', spotIds:[] };
+  const d = { id:Date.now(), label:'Day '+n, date:'', note:'', entries:[] };
   days.push(d);
   renderItinerary();
   showSync('⟳ 儲存...','var(--muted)');
@@ -1989,8 +2000,8 @@ async function deleteDay(id){
 async function addSpotToDay(dayId, spotId){
   const day = days.find(d=>d.id===dayId);
   if(!day) return;
-  if(day.spotIds.includes(spotId)){ alert('此景點已在此天行程中'); return; }
-  day.spotIds.push(spotId);
+  if(day.entries.some(e=>e.type==='spot'&&e.spotId===spotId)){ alert('此景點已在此天行程中'); return; }
+  day.entries.push({type:'spot', spotId});
   renderItinerary();
   renderAddToItinDays();
   closeModal('addToItinBackdrop');
@@ -2003,7 +2014,7 @@ async function addSpotToDay(dayId, spotId){
 async function removeSpotFromDay(dayId, spotId){
   const day = days.find(d=>d.id===dayId);
   if(!day) return;
-  day.spotIds = day.spotIds.filter(id=>id!==spotId);
+  day.entries = day.entries.filter(e=>!(e.type==='spot'&&e.spotId===spotId));
   renderItinerary();
   const row = itinRowMap[day.id];
   if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
@@ -2013,11 +2024,11 @@ async function removeSpotFromDay(dayId, spotId){
 async function moveSpot(dayId, spotId, dir){
   const day = days.find(d=>d.id===dayId);
   if(!day) return;
-  const idx = day.spotIds.indexOf(spotId);
+  const idx = day.entries.findIndex(e=>e.type==='spot'&&e.spotId===spotId);
   const newIdx = idx+dir;
-  if(newIdx<0||newIdx>=day.spotIds.length) return;
-  day.spotIds.splice(idx,1);
-  day.spotIds.splice(newIdx,0,spotId);
+  if(newIdx<0||newIdx>=day.entries.length) return;
+  const [moved] = day.entries.splice(idx,1);
+  day.entries.splice(newIdx,0,moved);
   renderItinerary();
   const row = itinRowMap[day.id];
   if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
@@ -2068,29 +2079,125 @@ function renderItinerary(){
     return;
   }
   const spotCatMap2={'自然':'🌿','歷史':'🏯','美食':'🍜','購物街':'🛍','體驗':'🎨','其他':'📌'};
-  el.innerHTML = days.map((day,di) => {
-    const spotCards = day.spotIds.map((sid,idx) => {
-      const spot = spotItems.find(s=>s.id===sid);
-      if(!spot) return '';
-      const mapUrl = (spot.links&&spot.links[0]?.url) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name)}`;
-      return `<div class="day-spot-item">
-        <div class="day-spot-num">${idx+1}</div>
-        <div class="day-spot-body">
-          <div class="day-spot-name">${spot.name}</div>
-          <div class="day-spot-cat">${spotCatMap2[spot.category]||'📌'} ${spot.category}${spot.region?' · '+spot.region:''}</div>
-        </div>
-        <div class="day-spot-actions">
-          <a class="day-spot-btn" href="${mapUrl}" target="_blank" rel="noopener" title="地圖">🗺</a>
-          ${idx>0?`<div class="day-spot-btn" onclick="moveSpot(${day.id},${sid},-1)" title="上移">↑</div>`:'<div class="day-spot-btn" style="opacity:.2">↑</div>'}
-          ${idx<day.spotIds.length-1?`<div class="day-spot-btn" onclick="moveSpot(${day.id},${sid},1)" title="下移">↓</div>`:'<div class="day-spot-btn" style="opacity:.2">↓</div>'}
-          <div class="day-spot-btn danger" onclick="removeSpotFromDay(${day.id},${sid})" title="移除" style="color:var(--red)">✕</div>
-        </div>
-      </div>`;
-    }).filter(Boolean).join('');
 
-    // Format date for display
-    const dateVal = day.date ? day.date.slice(0,10) : ''; // ensure YYYY-MM-DD
-    const dateDisplay = dateVal ? dateVal.replace(/-/g,'/') : '';
+  el.innerHTML = days.map((day,di) => {
+    const entries = day.entries || [];
+    const dateVal = day.date ? day.date.slice(0,10) : '';
+
+    const entryCards = entries.map((entry, ei) => {
+      const isFirst = ei === 0;
+      const isLast  = ei === entries.length - 1;
+      const moveUp   = `<div class="day-spot-btn" onclick="moveEntry(${day.id},${ei},-1)" style="${isFirst?'opacity:.2;pointer-events:none':''}">↑</div>`;
+      const moveDown = `<div class="day-spot-btn" onclick="moveEntry(${day.id},${ei},1)" style="${isLast?'opacity:.2;pointer-events:none':''}">↓</div>`;
+
+      if (entry.type === 'spot') {
+        const spot = spotItems.find(s=>s.id===entry.spotId);
+        if (!spot) return '';
+        const mapUrl = (spot.links&&spot.links[0]?.url) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name)}`;
+        return `<div class="day-spot-item">
+          <div class="day-spot-num">${ei+1}</div>
+          <div class="day-spot-body">
+            <div class="day-spot-name">${spot.name}</div>
+            <div class="day-spot-cat">${spotCatMap2[spot.category]||'📌'} ${spot.category}${spot.region?' · '+spot.region:''}</div>
+          </div>
+          <div class="day-spot-actions">
+            <a class="day-spot-btn" href="${mapUrl}" target="_blank" rel="noopener">🗺</a>
+            ${moveUp}${moveDown}
+            <div class="day-spot-btn danger" onclick="removeEntry(${day.id},${ei})" style="color:var(--red)">✕</div>
+          </div>
+        </div>`;
+
+      } else if (entry.type === 'transport') {
+        const origin = entry.from, dest = entry.to;
+        let mapsUrl;
+        if (entry.time && day.date) {
+          try {
+            const [h,m] = entry.time.split(':').map(Number);
+            const dt = new Date(`${day.date}T${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}:00`);
+            mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit&departure_time=${Math.floor(dt.getTime()/1000)}`;
+          } catch(e) { mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit`; }
+        } else {
+          mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit`;
+        }
+        const timeLabel = entry.time && day.date ? `${day.date} ${entry.time}` : (entry.time||'');
+        return `<div class="day-spot-item" style="background:#e8f4fd;border-color:#b3d9f0">
+          <div class="day-spot-num" style="background:var(--blue)">${ei+1}</div>
+          <div class="day-spot-body" id="dayItemBody_${day.id}_${ei}">
+            <div class="day-spot-name">${entry.mode||'🚅'} ${entry.from} → ${entry.to}</div>
+            <div class="day-spot-cat">${timeLabel}${entry.fare?' · '+entry.fare:''}${entry.note?' · '+entry.note:''}</div>
+            <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);border:1px solid var(--blue);border-radius:4px;padding:2px 8px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:4px">🗺 Google Maps 查詢班次 ↗</a>
+          </div>
+          <div id="dayItemEditForm_${day.id}_${ei}" style="display:none;flex:1;font-size:12px">
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              <input type="text" id="editItemFrom_${day.id}_${ei}" value="${entry.from||''}" placeholder="出發地" style="flex:1;font-size:12px">
+              <span style="line-height:32px;color:var(--muted)">→</span>
+              <input type="text" id="editItemTo_${day.id}_${ei}" value="${entry.to||''}" placeholder="目的地" style="flex:1;font-size:12px">
+            </div>
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              <input type="text" id="editItemTime_${day.id}_${ei}" value="${entry.time||''}" placeholder="時間" style="flex:1;font-size:12px">
+              <input type="text" id="editItemFare_${day.id}_${ei}" value="${entry.fare||''}" placeholder="費用" style="flex:1;font-size:12px">
+            </div>
+            <input type="text" id="editItemNote_${day.id}_${ei}" value="${entry.note||''}" placeholder="備注" style="width:100%;margin-bottom:6px;font-size:12px">
+            <div style="display:flex;gap:5px">
+              <button onclick="cancelEditEntry(${day.id},${ei})" class="btn btn-secondary" style="flex:1;padding:5px;margin-top:0;font-size:11px">取消</button>
+              <button onclick="saveEditEntry(${day.id},${ei})" class="btn btn-primary" style="flex:2;padding:5px;margin-top:0;font-size:11px">💾 儲存</button>
+            </div>
+          </div>
+          <div class="day-spot-actions">
+            ${moveUp}${moveDown}
+            <div class="day-spot-btn" onclick="toggleEditEntry(${day.id},${ei})">✏️</div>
+            <div class="day-spot-btn danger" onclick="removeEntry(${day.id},${ei})" style="color:var(--red)">✕</div>
+          </div>
+        </div>`;
+
+      } else if (entry.type === 'memo') {
+        return `<div class="day-spot-item" style="background:#fdf8e8;border-color:#f0e0a0">
+          <div class="day-spot-num" style="background:var(--gold)">${ei+1}</div>
+          <div class="day-spot-body" id="dayItemBody_${day.id}_${ei}">
+            <div class="day-spot-name">📝 ${entry.name}</div>
+            ${entry.body?`<div class="day-spot-cat" style="white-space:pre-wrap">${entry.body}</div>`:''}
+          </div>
+          <div id="dayItemEditForm_${day.id}_${ei}" style="display:none;flex:1;font-size:12px">
+            <input type="text" id="editItemName_${day.id}_${ei}" value="${entry.name||''}" placeholder="標題" style="width:100%;margin-bottom:4px;font-size:12px">
+            <textarea id="editItemBody_${day.id}_${ei}" placeholder="內容" style="width:100%;margin-bottom:6px;font-size:12px;min-height:50px;resize:vertical">${entry.body||''}</textarea>
+            <div style="display:flex;gap:5px">
+              <button onclick="cancelEditEntry(${day.id},${ei})" class="btn btn-secondary" style="flex:1;padding:5px;margin-top:0;font-size:11px">取消</button>
+              <button onclick="saveEditEntry(${day.id},${ei})" class="btn btn-primary" style="flex:2;padding:5px;margin-top:0;font-size:11px">💾 儲存</button>
+            </div>
+          </div>
+          <div class="day-spot-actions">
+            ${moveUp}${moveDown}
+            <div class="day-spot-btn" onclick="toggleEditEntry(${day.id},${ei})">✏️</div>
+            <div class="day-spot-btn danger" onclick="removeEntry(${day.id},${ei})" style="color:var(--red)">✕</div>
+          </div>
+        </div>`;
+
+      } else { // place
+        return `<div class="day-spot-item" style="background:#f8f6f0;border-color:#e8e0cc">
+          <div class="day-spot-num" style="background:var(--gold)">${ei+1}</div>
+          <div class="day-spot-body" id="dayItemBody_${day.id}_${ei}">
+            <div class="day-spot-name">${entry.name}</div>
+            ${entry.memo?`<div class="day-spot-cat" style="font-style:italic">📝 ${entry.memo}</div>`:''}
+            ${entry.url?`<div class="day-spot-cat"><a href="${entry.url}" target="_blank" style="color:var(--blue);font-size:11px">🗺 查看地圖 ↗</a></div>`:''}
+          </div>
+          <div id="dayItemEditForm_${day.id}_${ei}" style="display:none;flex:1;font-size:12px">
+            <input type="text" id="editItemName_${day.id}_${ei}" value="${entry.name||''}" placeholder="名稱" style="width:100%;margin-bottom:4px;font-size:12px">
+            <input type="text" id="editItemMemo_${day.id}_${ei}" value="${entry.memo||''}" placeholder="備忘" style="width:100%;margin-bottom:4px;font-size:12px">
+            <input type="url" id="editItemUrl_${day.id}_${ei}" value="${entry.url||''}" placeholder="Maps 連結" style="width:100%;margin-bottom:6px;font-size:12px">
+            <div style="display:flex;gap:5px">
+              <button onclick="cancelEditEntry(${day.id},${ei})" class="btn btn-secondary" style="flex:1;padding:5px;margin-top:0;font-size:11px">取消</button>
+              <button onclick="saveEditEntry(${day.id},${ei})" class="btn btn-primary" style="flex:2;padding:5px;margin-top:0;font-size:11px">💾 儲存</button>
+            </div>
+          </div>
+          <div class="day-spot-actions">
+            ${entry.url?`<a class="day-spot-btn" href="${entry.url}" target="_blank" rel="noopener">🗺</a>`:''}
+            ${moveUp}${moveDown}
+            <div class="day-spot-btn" onclick="toggleEditEntry(${day.id},${ei})">✏️</div>
+            <div class="day-spot-btn danger" onclick="removeEntry(${day.id},${ei})" style="color:var(--red)">✕</div>
+          </div>
+        </div>`;
+      }
+    }).filter(Boolean).join('');
 
     return `<div class="day-card">
       <div class="day-header">
@@ -2102,306 +2209,56 @@ function renderItinerary(){
         <div class="day-del" onclick="deleteDay(${day.id})">🗑</div>
       </div>
       <div class="day-spots">
-        ${spotCards||''}
-        ${(day.items||[]).map((item,ii)=>{
-          const isTransport = item.type === 'transport';
-          const isMemo = item.type === 'memo';
-          const bg = isTransport ? '#e8f4fd' : isMemo ? '#fdf8e8' : '#f8f6f0';
-          const bc = isTransport ? '#b3d9f0' : isMemo ? '#f0e0a0' : '#e8e0cc';
-          const numBg = isTransport ? 'var(--blue)' : isMemo ? 'var(--gold)' : 'var(--gold)';
-          const label = isTransport
-            ? (() => {
-                const origin = item.from;
-                const dest   = item.to;
-                let mapsUrl;
-                if (item.time && day.date) {
-                  try {
-                    const [h,m] = item.time.split(':').map(Number);
-                    const dt = new Date(`${day.date}T${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}:00`);
-                    const unix = Math.floor(dt.getTime()/1000);
-                    // Google Maps with departure_time via unix timestamp
-                    mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit&departure_time=${unix}`;
-                  } catch(e) {
-                    mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit`;
-                  }
-                } else {
-                  mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit`;
-                }
-                const timeLabel = item.time && day.date ? `${day.date} ${item.time}` : (item.time||'');
-                return `<div class="day-spot-name">${item.mode||'🚅'} ${item.from} → ${item.to}</div>
-                  <div class="day-spot-cat">${timeLabel}${item.fare?' · '+item.fare:''}${item.note?' · '+item.note:''}</div>
-                  <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);border:1px solid var(--blue);border-radius:4px;padding:3px 10px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:4px">🗺 Google Maps 查詢班次 ↗</a>`;
-              })()
-            : isMemo
-            ? `<div class="day-spot-name">📝 ${item.name}</div>${item.body?`<div class="day-spot-cat" style="white-space:pre-wrap">${item.body}</div>`:''}`
-            : `<div class="day-spot-name">${item.name}</div>
-               ${item.memo?`<div class="day-spot-cat" style="font-style:italic">📝 ${item.memo}</div>`:''}
-               ${item.url?`<div class="day-spot-cat"><a href="${item.url}" target="_blank" style="color:var(--blue);font-size:11px">🗺 查看地圖 ↗</a></div>`:''}`;
-          return `<div class="day-spot-item" style="background:${bg};border-color:${bc}">
-            <div class="day-spot-num" style="background:${numBg}">${day.spotIds.length+ii+1}</div>
-            <div class="day-spot-body" id="dayItemBody_${day.id}_${ii}">${label}</div>
-            <div id="dayItemEditForm_${day.id}_${ii}" style="display:none;flex:1;font-size:12px">
-              <div style="color:var(--muted);margin-bottom:4px;font-size:11px">${isTransport?'🚅 交通':isMemo?'📝 備忘':'📍 地點'}</div>
-              ${isTransport ? `
-                <div style="display:flex;gap:4px;margin-bottom:4px">
-                  <input type="text" id="editItemFrom_${day.id}_${ii}" value="${item.from||''}" placeholder="出發地" style="flex:1;font-size:12px">
-                  <span style="line-height:32px;color:var(--muted)">→</span>
-                  <input type="text" id="editItemTo_${day.id}_${ii}" value="${item.to||''}" placeholder="目的地" style="flex:1;font-size:12px">
-                </div>
-                <div style="display:flex;gap:4px;margin-bottom:4px">
-                  <input type="text" id="editItemTime_${day.id}_${ii}" value="${item.time||''}" placeholder="時間" style="flex:1;font-size:12px">
-                  <input type="text" id="editItemFare_${day.id}_${ii}" value="${item.fare||''}" placeholder="費用" style="flex:1;font-size:12px">
-                </div>
-                <input type="text" id="editItemNote_${day.id}_${ii}" value="${item.note||''}" placeholder="備注" style="width:100%;margin-bottom:6px;font-size:12px">
-              ` : isMemo ? `
-                <input type="text" id="editItemName_${day.id}_${ii}" value="${item.name||''}" placeholder="標題" style="width:100%;margin-bottom:4px;font-size:12px">
-                <textarea id="editItemBody_${day.id}_${ii}" placeholder="內容" style="width:100%;margin-bottom:6px;font-size:12px;min-height:50px;resize:vertical">${item.body||''}</textarea>
-              ` : `
-                <input type="text" id="editItemName_${day.id}_${ii}" value="${item.name||''}" placeholder="名稱" style="width:100%;margin-bottom:4px;font-size:12px">
-                <input type="text" id="editItemMemo_${day.id}_${ii}" value="${item.memo||''}" placeholder="備忘" style="width:100%;margin-bottom:4px;font-size:12px">
-                <input type="url" id="editItemUrl_${day.id}_${ii}" value="${item.url||''}" placeholder="Maps 連結" style="width:100%;margin-bottom:6px;font-size:12px">
-              `}
-              <div style="display:flex;gap:5px">
-                <button onclick="cancelEditDayItem(${day.id},${ii})" class="btn btn-secondary" style="flex:1;padding:5px;margin-top:0;font-size:11px">取消</button>
-                <button onclick="saveEditDayItem(${day.id},${ii})" class="btn btn-primary" style="flex:2;padding:5px;margin-top:0;font-size:11px">💾 儲存</button>
-              </div>
-            </div>
-            <div class="day-spot-actions">
-              ${!isTransport && !isMemo && item.url?`<a class="day-spot-btn" href="${item.url}" target="_blank" rel="noopener">🗺</a>`:''}
-              <div class="day-spot-btn" onclick="moveDayItem(${day.id},${ii},-1)" style="${ii===0?'opacity:.2;pointer-events:none':''}">↑</div>
-              <div class="day-spot-btn" onclick="moveDayItem(${day.id},${ii},1)" style="${ii===(day.items||[]).length-1?'opacity:.2;pointer-events:none':''}">↓</div>
-              <div class="day-spot-btn" onclick="toggleEditDayItem(${day.id},${ii})">✏️</div>
-              <div class="day-spot-btn danger" onclick="removeDayItem(${day.id},${ii})" style="color:var(--red)">✕</div>
-            </div>
-          </div>`;
-        }).join('')}
-        ${!day.spotIds.length && !(day.items||[]).length ? `<div class="day-empty">點下方加入地點或備忘</div>` : ''}
-        <!-- Inline add form -->
-        <div id="dayAddForm_${day.id}" style="display:none;padding:10px;background:var(--cream);border-radius:6px;margin-top:6px">
-          <!-- Type selector -->
-          <div style="display:flex;gap:6px;margin-bottom:10px">
-            <button onclick="setDayItemType(${day.id},'place')" id="dtype_place_${day.id}" style="flex:1;padding:6px;border:2px solid var(--teal);border-radius:5px;background:#f0faf8;font-size:12px;font-weight:600;color:var(--teal);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📍 地點</button>
-            <button onclick="setDayItemType(${day.id},'transport')" id="dtype_transport_${day.id}" style="flex:1;padding:6px;border:2px solid var(--border);border-radius:5px;background:var(--paper);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">🚅 交通</button>
-            <button onclick="setDayItemType(${day.id},'memo')" id="dtype_memo_${day.id}" style="flex:1;padding:6px;border:2px solid var(--border);border-radius:5px;background:var(--paper);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📝 備忘</button>
-          </div>
-
-          <!-- Place fields -->
-          <div id="dayFields_place_${day.id}">
-            <input type="text" id="dayItemName_${day.id}" placeholder="地點名稱 *" style="width:100%;margin-bottom:6px;font-size:13px">
-            <input type="text" id="dayItemMemo_${day.id}" placeholder="備忘（可選）" style="width:100%;margin-bottom:6px;font-size:13px">
-            <input type="url" id="dayItemUrl_${day.id}" placeholder="Google Maps 連結（可選）" style="width:100%;margin-bottom:8px;font-size:13px">
-          </div>
-
-          <!-- Transport fields -->
-          <div id="dayFields_transport_${day.id}" style="display:none">
-            <div style="display:flex;gap:6px;margin-bottom:6px">
-              <input type="text" id="dayTransFrom_${day.id}" placeholder="出發地 *" style="flex:1;font-size:13px">
-              <span style="line-height:36px;color:var(--muted)">→</span>
-              <input type="text" id="dayTransTo_${day.id}" placeholder="目的地 *" style="flex:1;font-size:13px">
-            </div>
-            <div style="display:flex;gap:6px;margin-bottom:6px">
-              <select id="dayTransMode_${day.id}" style="flex:1;font-size:13px">
-                <option value="🚅 電車">🚅 電車</option>
-                <option value="🚌 巴士">🚌 巴士</option>
-                <option value="🚶 步行">🚶 步行</option>
-                <option value="🚕 計程車">🚕 計程車</option>
-                <option value="🚗 自駕">🚗 自駕</option>
-                <option value="⛴ 渡輪">⛴ 渡輪</option>
-                <option value="🚡 纜車">🚡 纜車</option>
-                <option value="✈️ 飛機">✈️ 飛機</option>
-              </select>
-              <input type="text" id="dayTransTime_${day.id}" placeholder="時間 e.g. 10:23" style="flex:1;font-size:13px">
-              <input type="text" id="dayTransFare_${day.id}" placeholder="費用 e.g. ¥320" style="width:80px;font-size:13px;flex-shrink:0">
-            </div>
-            <input type="text" id="dayTransNote_${day.id}" placeholder="班次/備注（可選）" style="width:100%;margin-bottom:8px;font-size:13px">
-          </div>
-
-          <!-- Memo fields -->
-          <div id="dayFields_memo_${day.id}" style="display:none">
-            <input type="text" id="dayMemoTitle_${day.id}" placeholder="備忘標題 *" style="width:100%;margin-bottom:6px;font-size:13px">
-            <textarea id="dayMemoBody_${day.id}" placeholder="內容（可選）" style="width:100%;margin-bottom:8px;font-size:13px;min-height:60px;resize:vertical"></textarea>
-          </div>
-
-          <div style="display:flex;gap:8px">
-            <button onclick="cancelDayItem(${day.id})" class="btn btn-secondary" style="flex:1;padding:8px;margin-top:0">取消</button>
-            <button onclick="saveDayItem(${day.id})" class="btn btn-primary" style="flex:2;padding:8px;margin-top:0">＋ 加入</button>
-          </div>
-        </div>
-        <button onclick="toggleDayAddForm(${day.id})" id="dayAddBtn_${day.id}" style="width:100%;margin-top:6px;padding:7px;border:1px dashed var(--border);border-radius:5px;background:transparent;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px">
-          ＋ 新增地點或備忘
-        </button>
+        ${entryCards || '<div class="day-empty">點下方加入地點、交通或備忘</div>'}
+        ${buildDayAddForm(day.id)}
       </div>
     </div>`;
   }).join('');
 }
 
-// Day item type selection
-const dayItemTypeState = {}; // dayId -> current type
-
-function setDayItemType(dayId, type) {
-  dayItemTypeState[dayId] = type;
-  ['place','transport','memo'].forEach(t => {
-    const btn = document.getElementById(`dtype_${t}_${dayId}`);
-    const fields = document.getElementById(`dayFields_${t}_${dayId}`);
-    const active = t === type;
-    if (btn) {
-      const colors = { place:'var(--teal)', transport:'var(--blue)', memo:'var(--gold)' };
-      const bgs = { place:'#f0faf8', transport:'#e8f4fd', memo:'#fdf8e8' };
-      btn.style.borderColor = active ? colors[t] : 'var(--border)';
-      btn.style.background  = active ? bgs[t] : 'var(--paper)';
-      btn.style.color       = active ? colors[t] : 'var(--muted)';
-      btn.style.fontWeight  = active ? '600' : '500';
-    }
-    if (fields) fields.style.display = active ? '' : 'none';
-  });
+function buildDayAddForm(dayId) {
+  return `<div id="dayAddForm_${dayId}" style="display:none;padding:10px;background:var(--cream);border-radius:6px;margin-top:6px">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button onclick="setDayItemType(${dayId},'place')" id="dtype_place_${dayId}" style="flex:1;padding:6px;border:2px solid var(--teal);border-radius:5px;background:#f0faf8;font-size:12px;font-weight:600;color:var(--teal);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📍 地點</button>
+      <button onclick="setDayItemType(${dayId},'transport')" id="dtype_transport_${dayId}" style="flex:1;padding:6px;border:2px solid var(--border);border-radius:5px;background:var(--paper);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">🚅 交通</button>
+      <button onclick="setDayItemType(${dayId},'memo')" id="dtype_memo_${dayId}" style="flex:1;padding:6px;border:2px solid var(--border);border-radius:5px;background:var(--paper);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📝 備忘</button>
+    </div>
+    <div id="dayFields_place_${dayId}">
+      <input type="text" id="dayItemName_${dayId}" placeholder="地點名稱 *" style="width:100%;margin-bottom:6px;font-size:13px">
+      <input type="text" id="dayItemMemo_${dayId}" placeholder="備忘（可選）" style="width:100%;margin-bottom:6px;font-size:13px">
+      <input type="url" id="dayItemUrl_${dayId}" placeholder="Google Maps 連結（可選）" style="width:100%;margin-bottom:8px;font-size:13px">
+    </div>
+    <div id="dayFields_transport_${dayId}" style="display:none">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input type="text" id="dayTransFrom_${dayId}" placeholder="出發地 *" style="flex:1;font-size:13px">
+        <span style="line-height:36px;color:var(--muted)">→</span>
+        <input type="text" id="dayTransTo_${dayId}" placeholder="目的地 *" style="flex:1;font-size:13px">
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <select id="dayTransMode_${dayId}" style="flex:1;font-size:13px">
+          <option value="🚅 電車">🚅 電車</option><option value="🚌 巴士">🚌 巴士</option>
+          <option value="🚶 步行">🚶 步行</option><option value="🚕 計程車">🚕 計程車</option>
+          <option value="🚗 自駕">🚗 自駕</option><option value="⛴ 渡輪">⛴ 渡輪</option>
+          <option value="🚡 纜車">🚡 纜車</option><option value="✈️ 飛機">✈️ 飛機</option>
+        </select>
+        <input type="text" id="dayTransTime_${dayId}" placeholder="時間 e.g. 10:23" style="flex:1;font-size:13px">
+        <input type="text" id="dayTransFare_${dayId}" placeholder="費用 e.g. ¥320" style="width:80px;font-size:13px;flex-shrink:0">
+      </div>
+      <input type="text" id="dayTransNote_${dayId}" placeholder="班次/備注（可選）" style="width:100%;margin-bottom:8px;font-size:13px">
+    </div>
+    <div id="dayFields_memo_${dayId}" style="display:none">
+      <input type="text" id="dayMemoTitle_${dayId}" placeholder="備忘標題 *" style="width:100%;margin-bottom:6px;font-size:13px">
+      <textarea id="dayMemoBody_${dayId}" placeholder="內容（可選）" style="width:100%;margin-bottom:8px;font-size:13px;min-height:60px;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="cancelDayItem(${dayId})" class="btn btn-secondary" style="flex:1;padding:8px;margin-top:0">取消</button>
+      <button onclick="saveDayItem(${dayId})" class="btn btn-primary" style="flex:2;padding:8px;margin-top:0">＋ 加入</button>
+    </div>
+  </div>
+  <button onclick="toggleDayAddForm(${dayId})" id="dayAddBtn_${dayId}" style="width:100%;margin-top:6px;padding:7px;border:1px dashed var(--border);border-radius:5px;background:transparent;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px">
+    ＋ 新增地點、交通或備忘
+  </button>`;
 }
-
-function toggleDayAddForm(dayId) {
-  const form = document.getElementById('dayAddForm_'+dayId);
-  const btn  = document.getElementById('dayAddBtn_'+dayId);
-  const show = form.style.display === 'none';
-  form.style.display = show ? '' : 'none';
-  btn.style.display  = show ? 'none' : 'flex';
-  if (show) {
-    setDayItemType(dayId, 'place'); // 預設地點
-    document.getElementById('dayItemName_'+dayId)?.focus();
-  }
-}
-
-function cancelDayItem(dayId) {
-  document.getElementById('dayAddForm_'+dayId).style.display = 'none';
-  document.getElementById('dayAddBtn_'+dayId).style.display = 'flex';
-  ['dayItemName_','dayItemMemo_','dayItemUrl_','dayTransFrom_','dayTransTo_','dayTransTime_','dayTransFare_','dayTransNote_','dayMemoTitle_','dayMemoBody_'].forEach(p => {
-    const el = document.getElementById(p+dayId); if (el) el.value = '';
-  });
-}
-
-async function saveDayItem(dayId) {
-  const type = dayItemTypeState[dayId] || 'place';
-  let item;
-
-  if (type === 'transport') {
-    const from = document.getElementById('dayTransFrom_'+dayId)?.value.trim();
-    const to   = document.getElementById('dayTransTo_'+dayId)?.value.trim();
-    if (!from || !to) { alert('請填寫出發地和目的地'); return; }
-    item = {
-      type: 'transport',
-      from, to,
-      mode: document.getElementById('dayTransMode_'+dayId)?.value || '🚅 電車',
-      time: document.getElementById('dayTransTime_'+dayId)?.value.trim(),
-      fare: document.getElementById('dayTransFare_'+dayId)?.value.trim(),
-      note: document.getElementById('dayTransNote_'+dayId)?.value.trim()
-    };
-  } else if (type === 'memo') {
-    const name = document.getElementById('dayMemoTitle_'+dayId)?.value.trim();
-    if (!name) { alert('請填寫備忘標題'); return; }
-    item = {
-      type: 'memo',
-      name,
-      body: document.getElementById('dayMemoBody_'+dayId)?.value.trim()
-    };
-  } else {
-    const name = document.getElementById('dayItemName_'+dayId)?.value.trim();
-    if (!name) { alert('請填寫地點名稱'); return; }
-    item = {
-      type: 'place',
-      name,
-      memo: document.getElementById('dayItemMemo_'+dayId)?.value.trim(),
-      url:  document.getElementById('dayItemUrl_'+dayId)?.value.trim()
-    };
-  }
-
-  const day = days.find(d=>d.id===dayId);
-  if (!day) return;
-  if (!day.items) day.items = [];
-  day.items.push(item);
-  cancelDayItem(dayId);
-  renderItinerary();
-  showSync('⟳ 儲存...','var(--muted)');
-  const row = itinRowMap[day.id];
-  if (row) {
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-  }
-}
-function toggleEditDayItem(dayId, idx) {
-  const body = document.getElementById(`dayItemBody_${dayId}_${idx}`);
-  const form = document.getElementById(`dayItemEditForm_${dayId}_${idx}`);
-  if (!body || !form) return;
-  const editing = form.style.display !== 'none';
-  body.style.display = editing ? '' : 'none';
-  form.style.display = editing ? 'none' : '';
-  if (!editing) document.getElementById(`editItemName_${dayId}_${idx}`)?.focus();
-}
-function cancelEditDayItem(dayId, idx) {
-  const body = document.getElementById(`dayItemBody_${dayId}_${idx}`);
-  const form = document.getElementById(`dayItemEditForm_${dayId}_${idx}`);
-  if (body) body.style.display = '';
-  if (form) form.style.display = 'none';
-}
-async function moveDayItem(dayId, idx, dir) {
-  const day = days.find(d=>d.id===dayId);
-  if (!day || !day.items) return;
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= day.items.length) return;
-  [day.items[idx], day.items[newIdx]] = [day.items[newIdx], day.items[idx]];
-  renderItinerary();
-  const row = itinRowMap[day.id];
-  if (row) {
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-  }
-}
-async function removeDayItem(dayId, idx) {
-  const day = days.find(d=>d.id===dayId);
-  if (!day) return;
-  day.items.splice(idx, 1);
-  renderItinerary();
-  const row = itinRowMap[day.id];
-  if (row) {
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-  }
-}
-async function saveEditDayItem(dayId, idx) {
-  const day = days.find(d=>d.id===dayId);
-  if (!day || !day.items) return;
-  const item = day.items[idx];
-  const type = item.type || 'place';
-  let updated;
-
-  if (type === 'transport') {
-    const from = document.getElementById(`editItemFrom_${dayId}_${idx}`)?.value.trim();
-    const to   = document.getElementById(`editItemTo_${dayId}_${idx}`)?.value.trim();
-    if (!from || !to) { alert('請填寫出發地和目的地'); return; }
-    updated = { ...item, from, to,
-      time: document.getElementById(`editItemTime_${dayId}_${idx}`)?.value.trim(),
-      fare: document.getElementById(`editItemFare_${dayId}_${idx}`)?.value.trim(),
-      note: document.getElementById(`editItemNote_${dayId}_${idx}`)?.value.trim()
-    };
-  } else if (type === 'memo') {
-    const name = document.getElementById(`editItemName_${dayId}_${idx}`)?.value.trim();
-    if (!name) { alert('標題不能為空'); return; }
-    updated = { ...item, name, body: document.getElementById(`editItemBody_${dayId}_${idx}`)?.value.trim() };
-  } else {
-    const name = document.getElementById(`editItemName_${dayId}_${idx}`)?.value.trim();
-    if (!name) { alert('名稱不能為空'); return; }
-    updated = { ...item, name,
-      memo: document.getElementById(`editItemMemo_${dayId}_${idx}`)?.value.trim(),
-      url:  document.getElementById(`editItemUrl_${dayId}_${idx}`)?.value.trim()
-    };
-  }
-
-  day.items[idx] = updated;
-  renderItinerary();
-  showSync('⟳ 儲存...','var(--muted)');
-  const row = itinRowMap[day.id];
-  if (row) {
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-  }
-}
-
 // Inline note edit
 function startEditDayNote(dayId){
   const span = document.getElementById('dayNote_'+dayId);
@@ -2429,13 +2286,13 @@ function renderAddToItinDays(){
   const el = document.getElementById('addToItinDayList');
   if(!days.length){ el.innerHTML=`<div class="empty-state" style="padding:16px"><p>還沒有天數，點下方新增</p></div>`; return; }
   el.innerHTML = days.map(day=>{
-    const already = day.spotIds.includes(addToItinSpotId);
+    const already = day.entries.some(e=>e.type==='spot'&&e.spotId===addToItinSpotId);
     return `<div class="itin-pick-item ${already?'in-day':''}" onclick="${already?'':'addSpotToDay('+day.id+','+addToItinSpotId+')'}">
       <span style="font-size:18px">🗓</span>
       <div style="flex:1">
         <div style="font-size:14px;font-weight:600">${day.label}</div>
         ${day.date?`<div style="font-size:11px;color:var(--muted)">${day.date}</div>`:''}
-        <div style="font-size:11px;color:var(--muted)">${day.spotIds.length} 個景點</div>
+        <div style="font-size:11px;color:var(--muted)">${day.entries.filter(e=>e.type==='spot').length} 個景點</div>
       </div>
       ${already?`<span class="itin-pick-badge">已加入</span>`:'<span style="color:var(--teal);font-size:18px">＋</span>'}
     </div>`;
