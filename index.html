@@ -1065,7 +1065,6 @@ async function loadShopItems(force=false){
 async function _fetchShop(){
   if(!currentTrip)return;
   try{
-    await gsEnsure(currentTrip.id,SHOP_COLS);
     const rows=await gsGet(currentTrip.id);
     shopRowMap={};shopItems=[];
     for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToShop(r);if(item.id){shopItems.push(item);shopRowMap[item.id]=i+1;}}
@@ -1154,7 +1153,6 @@ async function loadSpotItems(force=false){
 async function _fetchSpot(){
   if(!currentTrip)return;
   try{
-    await gsEnsure(currentTrip.id+'_spots',SPOT_COLS);
     const rows=await gsGet(currentTrip.id+'_spots');
     showSync(`景點:${rows.length}行`,'var(--teal)');
     spotRowMap={};spotItems=[];
@@ -1554,7 +1552,6 @@ async function loadBudgetItems(force=false){
 async function _fetchBudget(){
   if(!currentTrip)return;
   try{
-    await gsEnsure(currentTrip.id+'_budget',BUDGET_COLS);
     const rows=await gsGet(currentTrip.id+'_budget');
     budgetRowMap={};budgetItems=[];
     for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0])continue;const item=rowToBudget(r);if(item.id){budgetItems.push(item);budgetRowMap[item.id]=i+1;}}
@@ -1969,7 +1966,6 @@ let isSavingItin = false; // prevent fetch from overwriting during save
 async function _fetchItin(){
   if(!currentTrip) return;
   try{
-    await gsEnsure(currentTrip.id+'_itinerary', ITIN_COLS);
     const rows = await gsGet(currentTrip.id+'_itinerary');
     if(isSavingItin) return; // 有儲存進行中，不覆蓋
     itinRowMap={}; days=[];
