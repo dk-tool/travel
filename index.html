@@ -2057,6 +2057,38 @@ function updateBudgetFilters() {
 }
 
 // ══════════════════════════════════════════
+// SWIPE TO SWITCH TAB
+// ══════════════════════════════════════════
+(function initSwipe() {
+  const tabOrder = ['shopping','spots','itinerary','budget','add','settings'];
+  let startX = 0, startY = 0;
+
+  const el = document.getElementById('screen-shopping');
+  el.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  el.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // Only trigger if horizontal swipe > 60px and more horizontal than vertical
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+
+    // Find current active tab
+    const current = tabOrder.find(t => document.getElementById('panel-'+t)?.classList.contains('active'));
+    const idx = tabOrder.indexOf(current);
+    if (dx < 0 && idx < tabOrder.length - 1) {
+      // Swipe left → next tab
+      switchTab(tabOrder[idx + 1]);
+    } else if (dx > 0 && idx > 0) {
+      // Swipe right → previous tab
+      switchTab(tabOrder[idx - 1]);
+    }
+  }, { passive: true });
+})();
+
+// ══════════════════════════════════════════
 // INIT - 立刻從 cache 渲染，背景再同步
 // ══════════════════════════════════════════
 
