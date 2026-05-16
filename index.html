@@ -889,7 +889,7 @@ async function saveNewTrip(){
     trips.push(trip);saveCache(CK_TRIPS,trips);
     closeModal('newTripBackdrop');renderTripList();
     showSync('✅ 已建立','var(--sage)');
-    setTimeout(()=>selectTrip(trip.id),200);
+    await selectTrip(trip.id); // 直接跳入旅程
   }catch(e){showSync('❌ '+e.message,'var(--red)');alert('建立失敗：'+e.message);}
   setBusy(false,'saveTripBtn');
 }
