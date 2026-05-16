@@ -2100,24 +2100,32 @@ function renderItinerary(){
           const numBg = isTransport ? 'var(--blue)' : isMemo ? 'var(--gold)' : 'var(--gold)';
           const label = isTransport
             ? (() => {
-                // Build Google Maps transit URL
-                const origin = encodeURIComponent(item.from + (day.date ? '' : ''));
-                const dest   = encodeURIComponent(item.to);
-                // Parse time if provided (HH:MM) with day date
-                let departureParam = '';
+                const origin = item.from;
+                const dest   = item.to;
+                let transitUrl, mapsUrl;
+
+                // Google Maps (no time support on web, but useful for general direction)
+                mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit`;
+
+                // Yahoo 乗換案内 - supports date/time for Japan transit
                 if (item.time && day.date) {
                   try {
                     const [h,m] = item.time.split(':').map(Number);
-                    const dt = new Date(day.date + 'T' + String(h).padStart(2,'0') + ':' + String(m||0).padStart(2,'0') + ':00');
-                    if (!isNaN(dt.getTime())) {
-                      departureParam = '&departure_time=' + Math.floor(dt.getTime()/1000);
-                    }
+                    const [y,mo,d] = day.date.split('-').map(Number);
+                    // Yahoo transit URL format
+                    transitUrl = `https://transit.yahoo.co.jp/search/print?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(dest)}&y=${y}&m=${String(mo).padStart(2,'0')}&d=${String(d).padStart(2,'0')}&hh=${String(h).padStart(2,'0')}&m1=${String(Math.floor((m||0)/10))}&m2=${String((m||0)%10)}&type=1`;
                   } catch(e) {}
+                } else {
+                  transitUrl = `https://transit.yahoo.co.jp/search/print?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(dest)}&type=1`;
                 }
-                const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=transit${departureParam}`;
+
+                const timeLabel = item.time && day.date ? `${day.date} ${item.time}` : (item.time||'');
                 return `<div class="day-spot-name">${item.mode||'🚅'} ${item.from} → ${item.to}</div>
-                  <div class="day-spot-cat">${item.time||''}${item.fare?' · '+item.fare:''}${item.note?' · '+item.note:''}</div>
-                  <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);display:flex;align-items:center;gap:3px;margin-top:3px;text-decoration:none">🗺 Google Maps 查詢交通 ↗</a>`;
+                  <div class="day-spot-cat">${timeLabel}${item.fare?' · '+item.fare:''}${item.note?' · '+item.note:''}</div>
+                  <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+                    <a href="${transitUrl}" target="_blank" rel="noopener" style="font-size:11px;color:white;background:var(--rust);border-radius:4px;padding:2px 8px;text-decoration:none">🚅 Yahoo 乗換案内 ↗</a>
+                    <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);border:1px solid var(--blue);border-radius:4px;padding:2px 8px;text-decoration:none">🗺 Google Maps ↗</a>
+                  </div>`;
               })()
             : isMemo
             ? `<div class="day-spot-name">📝 ${item.name}</div>${item.body?`<div class="day-spot-cat" style="white-space:pre-wrap">${item.body}</div>`:''}`
