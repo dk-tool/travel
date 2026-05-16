@@ -2095,13 +2095,23 @@ function renderItinerary(){
         ${(day.items||[]).map((item,ii)=>`
           <div class="day-spot-item" style="background:#f8f6f0;border-color:#e8e0cc">
             <div class="day-spot-num" style="background:var(--gold)">${day.spotIds.length+ii+1}</div>
-            <div class="day-spot-body">
+            <div class="day-spot-body" id="dayItemBody_${day.id}_${ii}">
               <div class="day-spot-name">${item.name}</div>
               ${item.memo?`<div class="day-spot-cat" style="color:var(--muted);font-style:italic">📝 ${item.memo}</div>`:''}
               ${item.url?`<div class="day-spot-cat"><a href="${item.url}" target="_blank" style="color:var(--blue);font-size:11px">🗺 查看地圖 ↗</a></div>`:''}
             </div>
+            <div id="dayItemEditForm_${day.id}_${ii}" style="display:none;flex:1">
+              <input type="text" id="editItemName_${day.id}_${ii}" value="${item.name}" style="width:100%;margin-bottom:4px;font-size:12px">
+              <input type="text" id="editItemMemo_${day.id}_${ii}" value="${item.memo||''}" placeholder="備忘" style="width:100%;margin-bottom:4px;font-size:12px">
+              <input type="url" id="editItemUrl_${day.id}_${ii}" value="${item.url||''}" placeholder="Maps 連結" style="width:100%;margin-bottom:6px;font-size:12px">
+              <div style="display:flex;gap:5px">
+                <button onclick="cancelEditDayItem(${day.id},${ii})" class="btn btn-secondary" style="flex:1;padding:5px;margin-top:0;font-size:11px">取消</button>
+                <button onclick="saveEditDayItem(${day.id},${ii})" class="btn btn-primary" style="flex:2;padding:5px;margin-top:0;font-size:11px">💾 儲存</button>
+              </div>
+            </div>
             <div class="day-spot-actions">
               ${item.url?`<a class="day-spot-btn" href="${item.url}" target="_blank" rel="noopener">🗺</a>`:''}
+              <div class="day-spot-btn" onclick="toggleEditDayItem(${day.id},${ii})" title="編輯">✏️</div>
               <div class="day-spot-btn danger" onclick="removeDayItem(${day.id},${ii})" style="color:var(--red)">✕</div>
             </div>
           </div>`).join('')}
@@ -2158,7 +2168,37 @@ async function saveDayItem(dayId) {
     catch(e) { showSync('❌ '+e.message,'var(--red)'); }
   }
 }
-async function removeDayItem(dayId, idx) {
+function toggleEditDayItem(dayId, idx) {
+  const body = document.getElementById(`dayItemBody_${dayId}_${idx}`);
+  const form = document.getElementById(`dayItemEditForm_${dayId}_${idx}`);
+  if (!body || !form) return;
+  const editing = form.style.display !== 'none';
+  body.style.display = editing ? '' : 'none';
+  form.style.display = editing ? 'none' : '';
+  if (!editing) document.getElementById(`editItemName_${dayId}_${idx}`)?.focus();
+}
+function cancelEditDayItem(dayId, idx) {
+  const body = document.getElementById(`dayItemBody_${dayId}_${idx}`);
+  const form = document.getElementById(`dayItemEditForm_${dayId}_${idx}`);
+  if (body) body.style.display = '';
+  if (form) form.style.display = 'none';
+}
+async function saveEditDayItem(dayId, idx) {
+  const name = document.getElementById(`editItemName_${dayId}_${idx}`)?.value.trim();
+  if (!name) { alert('名稱不能為空'); return; }
+  const memo = document.getElementById(`editItemMemo_${dayId}_${idx}`)?.value.trim();
+  const url  = document.getElementById(`editItemUrl_${dayId}_${idx}`)?.value.trim();
+  const day  = days.find(d=>d.id===dayId);
+  if (!day || !day.items) return;
+  day.items[idx] = { name, memo, url };
+  renderItinerary();
+  showSync('⟳ 儲存...','var(--muted)');
+  const row = itinRowMap[day.id];
+  if (row) {
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+  }
+}
   const day = days.find(d=>d.id===dayId);
   if (!day) return;
   day.items.splice(idx, 1);
