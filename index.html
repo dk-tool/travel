@@ -335,25 +335,28 @@ textarea{resize:vertical;min-height:60px;}
           <div class="form-group">
             <label>🛍 購物分類</label>
             <div id="settings-shop-cats" style="margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="new-shop-cat" placeholder="新增分類..." style="flex:1">
-              <button onclick="addSettingItem('shopCats','new-shop-cat')" class="btn btn-primary" style="width:60px;margin-top:0;padding:0">＋</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-shop-icon" value="🛍" style="width:44px;text-align:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="openEmojiPick(this)" readonly>
+              <input type="text" id="new-shop-cat" placeholder="分類名稱..." style="flex:1">
+              <button onclick="addSettingItemWithIcon('shopCats','new-shop-icon','new-shop-cat')" class="btn btn-primary" style="width:50px;margin-top:0;padding:0">＋</button>
             </div>
           </div>
           <div class="form-group">
             <label>📍 景點類型</label>
             <div id="settings-spot-cats" style="margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="new-spot-cat" placeholder="新增類型..." style="flex:1">
-              <button onclick="addSettingItem('spotCats','new-spot-cat')" class="btn btn-teal" style="width:60px;margin-top:0;padding:0">＋</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-spot-icon" value="📍" style="width:44px;text-align:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="openEmojiPick(this)" readonly>
+              <input type="text" id="new-spot-cat" placeholder="類型名稱..." style="flex:1">
+              <button onclick="addSettingItemWithIcon('spotCats','new-spot-icon','new-spot-cat')" class="btn btn-teal" style="width:50px;margin-top:0;padding:0">＋</button>
             </div>
           </div>
           <div class="form-group">
             <label>💰 記帳分類</label>
             <div id="settings-budget-cats" style="margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="new-budget-cat" placeholder="新增分類..." style="flex:1">
-              <button onclick="addSettingItem('budgetCats','new-budget-cat')" class="btn" style="width:60px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-budget-icon" value="💰" style="width:44px;text-align:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="openEmojiPick(this)" readonly>
+              <input type="text" id="new-budget-cat" placeholder="分類名稱..." style="flex:1">
+              <button onclick="addSettingItemWithIcon('budgetCats','new-budget-icon','new-budget-cat')" class="btn" style="width:50px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
             </div>
           </div>
         </div>
@@ -363,25 +366,28 @@ textarea{resize:vertical;min-height:60px;}
           <div class="form-group">
             <label>🛒 採購清單分類</label>
             <div id="settings-life-shop-cats" style="margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="new-life-shop-cat" placeholder="新增分類..." style="flex:1">
-              <button onclick="addSettingItem('lifeShopCats','new-life-shop-cat')" class="btn btn-primary" style="width:60px;margin-top:0;padding:0">＋</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-life-shop-icon" value="🛒" style="width:44px;text-align:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="openEmojiPick(this)" readonly>
+              <input type="text" id="new-life-shop-cat" placeholder="分類名稱..." style="flex:1">
+              <button onclick="addSettingItemWithIcon('lifeShopCats','new-life-shop-icon','new-life-shop-cat')" class="btn btn-primary" style="width:50px;margin-top:0;padding:0">＋</button>
             </div>
           </div>
           <div class="form-group">
             <label>📌 待辦地點類型</label>
             <div id="settings-life-spot-cats" style="margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="new-life-spot-cat" placeholder="新增類型..." style="flex:1">
-              <button onclick="addSettingItem('lifeSpotCats','new-life-spot-cat')" class="btn btn-teal" style="width:60px;margin-top:0;padding:0">＋</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-life-spot-icon" value="📌" style="width:44px;text-align:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="openEmojiPick(this)" readonly>
+              <input type="text" id="new-life-spot-cat" placeholder="類型名稱..." style="flex:1">
+              <button onclick="addSettingItemWithIcon('lifeSpotCats','new-life-spot-icon','new-life-spot-cat')" class="btn btn-teal" style="width:50px;margin-top:0;padding:0">＋</button>
             </div>
           </div>
           <div class="form-group">
             <label>💰 花費分類</label>
             <div id="settings-life-budget-cats" style="margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="new-life-budget-cat" placeholder="新增分類..." style="flex:1">
-              <button onclick="addSettingItem('lifeBudgetCats','new-life-budget-cat')" class="btn" style="width:60px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-life-budget-icon" value="💰" style="width:44px;text-align:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="openEmojiPick(this)" readonly>
+              <input type="text" id="new-life-budget-cat" placeholder="分類名稱..." style="flex:1">
+              <button onclick="addSettingItemWithIcon('lifeBudgetCats','new-life-budget-icon','new-life-budget-cat')" class="btn" style="width:50px;margin-top:0;padding:0;background:var(--gold);color:white">＋</button>
             </div>
           </div>
         </div>
@@ -722,6 +728,16 @@ textarea{resize:vertical;min-height:60px;}
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('editBudgetBackdrop')">取消</button>
       <button class="btn" id="saveBudgetBtn" style="flex:2;margin-top:0;background:var(--gold);color:white" onclick="saveBudgetEdit()">💾 儲存</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Emoji Picker for Settings -->
+<div class="modal-backdrop" id="emojiPickBackdrop" onclick="closeModal('emojiPickBackdrop',event)">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-handle"></div>
+    <h3>選擇圖示</h3>
+    <div id="emojiPickGrid" style="display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;padding:4px 0"></div>
+    <button class="modal-close" onclick="closeModal('emojiPickBackdrop')" style="margin-top:16px">取消</button>
   </div>
 </div>
 
@@ -2286,7 +2302,10 @@ const spotCatIcons   = {'自然':'🌿','歷史':'🏯','美食':'🍜','購物�
 const budgetCatIcons = {'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','其他':'📦'};
 
 function getIcon(cat, iconMap) {
-  return iconMap[cat] || '📌';
+  // If category already starts with an emoji, don't add another
+  const emojiRegex = /^\p{Emoji}/u;
+  if (emojiRegex.test(cat)) return '';
+  return iconMap[cat] || '';
 }
 
 function updateSelectOptions(elId, cats, iconMap) {
@@ -2336,11 +2355,32 @@ function moveSettingItem(settingKey, idx, dir) {
   renderSettingsPanel();
 }
 
-function addSettingItem(settingKey, inputId) {
-  const val = document.getElementById(inputId).value.trim();
-  if (!val || settings[settingKey].includes(val)) return;
+// Emoji picker for settings
+const SETTING_EMOJIS = '🍱 👕 💄 🏺 🎁 📦 🌿 🏯 🍜 🛍 🎨 📌 🍵 🧧 🎎 🍶 🍣 🍤 🍡 🥢 🧴 💊 📷 📚 🎵 🎮 🏠 🔧 🛒 🛋 📦 🧹 🎉 💒 🎓 🏥 🚗 💼 🌱 🏗 💰 🚅 🏨 🎟 🍺 ☕ 🥗 🍕 🎪 🏖 🎿 ⛷ 🏄 🚴 🧗 🎭 🎬 🎤 🏋 🧘 🚀 ✈️ 🚢 🚂 🚁';
+let emojiPickTarget = null;
+
+function openEmojiPick(inputEl) {
+  emojiPickTarget = inputEl;
+  const grid = document.getElementById('emojiPickGrid');
+  grid.innerHTML = SETTING_EMOJIS.split(' ').map(e =>
+    `<span style="font-size:26px;cursor:pointer;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--paper)" onclick="selectEmoji('${e}')">${e}</span>`
+  ).join('');
+  document.getElementById('emojiPickBackdrop').classList.add('open');
+}
+
+function selectEmoji(emoji) {
+  if (emojiPickTarget) emojiPickTarget.value = emoji;
+  closeModal('emojiPickBackdrop');
+}
+
+function addSettingItemWithIcon(settingKey, iconInputId, nameInputId) {
+  const icon = document.getElementById(iconInputId)?.value.trim() || '';
+  const name = document.getElementById(nameInputId)?.value.trim();
+  if (!name) return;
+  const val = icon ? icon + ' ' + name : name;
+  if (settings[settingKey].includes(val)) return;
   settings[settingKey].push(val);
-  document.getElementById(inputId).value = '';
+  document.getElementById(nameInputId).value = '';
   renderSettingsPanel();
 }
 
