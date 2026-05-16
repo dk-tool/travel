@@ -890,15 +890,22 @@ async function selectTrip(id){
   budgetItems=[]; budgetRowMap={};
   days=[]; itinRowMap={};
 
-  // 立刻從 cache 渲染（同步）
-  const sc = loadCache(ck_shop(currentTrip.id));
+  // 立刻從 cache 渲染（同步）- 注意順序：先載 itin，spots 才能正確顯示 badge
+  const sc  = loadCache(ck_shop(currentTrip.id));
   const spc = loadCache(ck_spot(currentTrip.id));
-  const bc = loadCache('jp2_budget_'+currentTrip.id);
-  const ic = loadCache('jp2_itin_'+currentTrip.id);
-  if(sc){shopItems=sc.data||[];shopRowMap=sc.rowMap||{};renderShop();}
-  if(spc){spotItems=spc.data||[];spotRowMap=spc.rowMap||{};renderSpots();}
-  if(bc){budgetItems=bc.data||[];budgetRowMap=bc.rowMap||{};renderBudget();}
-  if(ic){days=ic.data||[];itinRowMap=ic.rowMap||{};renderItinerary();}
+  const bc  = loadCache('jp2_budget_'+currentTrip.id);
+  const ic  = loadCache('jp2_itin_'+currentTrip.id);
+
+  if(sc) {shopItems=sc.data||[];shopRowMap=sc.rowMap||{};}
+  if(ic) {days=ic.data||[];itinRowMap=ic.rowMap||{};} // 先載 days！
+  if(spc){spotItems=spc.data||[];spotRowMap=spc.rowMap||{};}
+  if(bc) {budgetItems=bc.data||[];budgetRowMap=bc.rowMap||{};}
+
+  // 渲染（spots 需要 days 才能正確顯示 badge 和排序）
+  if(sc)  renderShop();
+  if(spc) renderSpots();   // days 已就緒，badge 和排序立刻正確
+  if(bc)  renderBudget();
+  if(ic)  renderItinerary();
 
   // 背景同步 - 全部並行載入
   showSync('🔄 同步中...', 'var(--muted)');
