@@ -1161,7 +1161,7 @@ function renderSpots(){
     const inDays = days.filter(d=>d.spotIds.includes(item.id));
     const inItinBadge = inDays.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
-          ${inDays.map(d=>`<span style="background:#e0f2f1;color:var(--teal);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600">📅 ${d.label}${d.date?' · '+d.date:''}</span>`).join('')}
+          ${inDays.map(d=>`<span style="background:#e0f2f1;color:var(--teal);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600">📅 ${d.date||d.label}</span>`).join('')}
          </div>` : '';
 
     const linksHtml=`<div class="links-section"><div class="links-label">🗺 地圖 &amp; 連結</div>
@@ -1826,8 +1826,19 @@ async function saveDayDate(dayId, date){
   const day = days.find(d=>d.id===dayId);
   if(!day) return;
   day.date = date;
+  renderItinerary(); // 立刻更新畫面
+  renderSpots();     // 更新景點的 badge
+  showSync('⟳ 儲存...','var(--muted)');
   const row = itinRowMap[day.id];
-  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ } }
+  if(row){
+    try{
+      await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+      saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
+      showSync('✅','var(--sage)');
+    }catch(e){
+      showSync('❌ '+e.message,'var(--red)');
+    }
+  }
 }
 
 // Render itinerary
