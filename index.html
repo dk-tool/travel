@@ -2088,17 +2088,30 @@ async function saveDayDate(dayId, date){
   renderSpots();
   showSync('⟳ 儲存...','var(--muted)');
   const row = itinRowMap[day.id];
-  if(row){
+  if(!row){
+    // row not found - need to fetch from sheet first
+    showSync('⟳ 重新同步...','var(--muted)');
+    await _fetchItin();
+    const row2 = itinRowMap[day.id];
+    if(!row2){ showSync('❌ 找不到列','var(--red)'); return; }
     isSavingItin = true;
     try{
-      await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+      await gsUpdate(currentTrip.id+'_itinerary', row2, itinToRow(day));
       saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
       showSync('✅','var(--sage)');
-    }catch(e){
-      showSync('❌ '+e.message,'var(--red)');
-    } finally {
-      isSavingItin = false;
-    }
+    }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
+    finally{ isSavingItin = false; }
+    return;
+  }
+  isSavingItin = true;
+  try{
+    await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
+    saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
+    showSync('✅','var(--sage)');
+  }catch(e){
+    showSync('❌ '+e.message,'var(--red)');
+  } finally {
+    isSavingItin = false;
   }
 }
 
