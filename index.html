@@ -803,6 +803,15 @@ const gsDelSheet=sheet=>gasCall({action:'deleteSheet',sheet});
 // CONVERTERS
 // ══════════════════════════════════════════
 function safeJSON(s,fb){try{return JSON.parse(s||'');}catch{return fb;}}
+function fmtDate(str) {
+  if (!str) return '';
+  // Handle ISO format like 2026-05-14T16:00:00.000Z
+  const d = new Date(str);
+  if (!isNaN(d.getTime()) && str.includes('T')) {
+    return d.toLocaleDateString('zh-TW');
+  }
+  return str.slice(0,10); // already YYYY-MM-DD or zh-TW format
+}
 function tripToRow(t){return[t.id,t.name,t.date||'',t.icon||'🗾',JSON.stringify(t.regions||[])];}
 function rowToTrip(r){return{id:r[0],name:r[1]||'',date:r[2]||'',icon:r[3]||'🗾',regions:safeJSON(r[4],[])};}
 function shopToRow(item){return SHOP_COLS.map(k=>{if(k==='links'||k==='photos')return JSON.stringify(item[k]||[]);if(k==='purchased')return item.purchased?'1':'0';return item[k]??'';});}
@@ -1149,7 +1158,7 @@ function renderShop(){
             ${item.region?`<span>📍${item.region}</span>`:''}
             ${item.budget?`<span>💴¥${parseInt(item.budget).toLocaleString()}</span>`:''}
             ${stars?`<span>${stars}</span>`:''}
-            <span style="margin-left:auto;opacity:.5">${item.createdAt}</span>
+            <span style="margin-left:auto;opacity:.5">${fmtDate(item.createdAt)}</span>
           </div>
           ${item.note?`<div class="item-note">${item.note}</div>`:''}
           ${photosHtml}
@@ -1217,7 +1226,7 @@ function renderSpots(){
           <div class="item-meta">
             ${item.region?`<span>📍${item.region}</span>`:''}
             ${stars?`<span>${stars}</span>`:''}
-            <span style="margin-left:auto;opacity:.5">${item.createdAt}</span>
+            <span style="margin-left:auto;opacity:.5">${fmtDate(item.createdAt)}</span>
           </div>
           ${item.note?`<div class="item-note">${item.note}</div>`:''}
           ${inItinBadge}
@@ -1819,9 +1828,17 @@ let addToItinSpotId = null;
 
 function itinToRow(d){ return ITIN_COLS.map(k => k==='spotIds' ? JSON.stringify(d.spotIds||[]) : d[k]||''); }
 function rowToItin(row){
-  const dateRaw = row[2]||'';
-  // Normalize date to YYYY-MM-DD
-  const dateNorm = dateRaw ? dateRaw.toString().slice(0,10).replace(/\//g,'-') : '';
+    const dateRaw = row[2]||'';
+    // Normalize date to YYYY-MM-DD, handle ISO format
+    let dateNorm = '';
+    if (dateRaw) {
+      const d = new Date(dateRaw.toString());
+      if (!isNaN(d.getTime())) {
+        dateNorm = d.toISOString().slice(0,10);
+      } else {
+        dateNorm = dateRaw.toString().slice(0,10).replace(/\//g,'-');
+      }
+    }
   return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', spotIds:safeJSON(row[4],[]) };
 }
 
