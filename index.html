@@ -1946,16 +1946,19 @@ async function loadItinerary(force=false){
   }
   await _fetchItin();
 }
+let isSavingItin = false; // prevent fetch from overwriting during save
+
 async function _fetchItin(){
   if(!currentTrip) return;
   try{
     await gsEnsure(currentTrip.id+'_itinerary', ITIN_COLS);
     const rows = await gsGet(currentTrip.id+'_itinerary');
+    if(isSavingItin) return; // 有儲存進行中，不覆蓋
     itinRowMap={}; days=[];
     for(let i=1;i<rows.length;i++){ const r=rows[i]; if(!r||!r[0]) continue; const d=rowToItin(r); if(d.id){ days.push(d); itinRowMap[d.id]=i+1; } }
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
     renderItinerary();
-    renderSpots(); // 更新景點上的行程 badge
+    renderSpots();
   }catch(e){ showSync('❌ '+e.message,'var(--red)'); }
 }
 
@@ -2026,7 +2029,12 @@ async function saveDayNote(dayId, note){
   if(!day) return;
   day.note = note;
   const row = itinRowMap[day.id];
-  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+  if(row){
+    isSavingItin = true;
+    try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
+    catch(e){ showSync('❌ '+e.message,'var(--red)'); }
+    finally { isSavingItin = false; }
+  }
 }
 
 // Save day date inline
@@ -2034,17 +2042,20 @@ async function saveDayDate(dayId, date){
   const day = days.find(d=>d.id===dayId);
   if(!day) return;
   day.date = date;
-  renderItinerary(); // 立刻更新畫面
-  renderSpots();     // 更新景點的 badge
+  renderItinerary();
+  renderSpots();
   showSync('⟳ 儲存...','var(--muted)');
   const row = itinRowMap[day.id];
   if(row){
+    isSavingItin = true;
     try{
       await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
       saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
       showSync('✅','var(--sage)');
     }catch(e){
       showSync('❌ '+e.message,'var(--red)');
+    } finally {
+      isSavingItin = false;
     }
   }
 }
