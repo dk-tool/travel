@@ -1913,14 +1913,17 @@ function saveHoursToNote(spotId) {
 // Stored as one row per day in trip_xxx_itinerary sheet
 // ITIN_COLS: id, label, date, note, spotIds (JSON array of spotId)
 
-const ITIN_COLS = ['id','label','date','note','spotIds'];
+const ITIN_COLS = ['id','label','date','note','spotIds','items'];
 let days = [], itinRowMap = {};
 let addToItinSpotId = null;
 
-function itinToRow(d){ return ITIN_COLS.map(k => k==='spotIds' ? JSON.stringify(d.spotIds||[]) : d[k]||''); }
+function itinToRow(d){ return ITIN_COLS.map(k => {
+  if (k==='spotIds') return JSON.stringify(d.spotIds||[]);
+  if (k==='items') return JSON.stringify(d.items||[]);
+  return d[k]||'';
+}); }
 function rowToItin(row){
     const dateRaw = row[2]||'';
-    // Normalize date to YYYY-MM-DD, handle ISO format
     let dateNorm = '';
     if (dateRaw) {
       const d = new Date(dateRaw.toString());
@@ -1930,7 +1933,7 @@ function rowToItin(row){
         dateNorm = dateRaw.toString().slice(0,10).replace(/\//g,'-');
       }
     }
-  return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', spotIds:safeJSON(row[4],[]) };
+  return { id:parseInt(row[0])||0, label:row[1]||'', date:dateNorm, note:row[3]||'', spotIds:safeJSON(row[4],[]), items:safeJSON(row[5],[]) };
 }
 
 // Load
@@ -2088,10 +2091,83 @@ function renderItinerary(){
         <div class="day-del" onclick="deleteDay(${day.id})">🗑</div>
       </div>
       <div class="day-spots">
-        ${spotCards||`<div class="day-empty">點景點的「📅」按鈕加入此天</div>`}
+        ${spotCards||''}
+        ${(day.items||[]).map((item,ii)=>`
+          <div class="day-spot-item" style="background:#f8f6f0;border-color:#e8e0cc">
+            <div class="day-spot-num" style="background:var(--gold)">${day.spotIds.length+ii+1}</div>
+            <div class="day-spot-body">
+              <div class="day-spot-name">${item.name}</div>
+              ${item.memo?`<div class="day-spot-cat" style="color:var(--muted);font-style:italic">📝 ${item.memo}</div>`:''}
+              ${item.url?`<div class="day-spot-cat"><a href="${item.url}" target="_blank" style="color:var(--blue);font-size:11px">🗺 查看地圖 ↗</a></div>`:''}
+            </div>
+            <div class="day-spot-actions">
+              ${item.url?`<a class="day-spot-btn" href="${item.url}" target="_blank" rel="noopener">🗺</a>`:''}
+              <div class="day-spot-btn danger" onclick="removeDayItem(${day.id},${ii})" style="color:var(--red)">✕</div>
+            </div>
+          </div>`).join('')}
+        ${!day.spotIds.length && !(day.items||[]).length ? `<div class="day-empty">點下方加入地點或備忘</div>` : ''}
+        <!-- Inline add form -->
+        <div id="dayAddForm_${day.id}" style="display:none;padding:8px;background:var(--cream);border-radius:6px;margin-top:6px">
+          <input type="text" id="dayItemName_${day.id}" placeholder="地點或備忘名稱 *" style="width:100%;margin-bottom:6px;font-size:13px">
+          <input type="text" id="dayItemMemo_${day.id}" placeholder="備忘（可選）" style="width:100%;margin-bottom:6px;font-size:13px">
+          <input type="url" id="dayItemUrl_${day.id}" placeholder="Google Maps 連結（可選）" style="width:100%;margin-bottom:8px;font-size:13px">
+          <div style="display:flex;gap:8px">
+            <button onclick="cancelDayItem(${day.id})" class="btn btn-secondary" style="flex:1;padding:8px;margin-top:0">取消</button>
+            <button onclick="saveDayItem(${day.id})" class="btn btn-primary" style="flex:2;padding:8px;margin-top:0">＋ 加入</button>
+          </div>
+        </div>
+        <button onclick="toggleDayAddForm(${day.id})" id="dayAddBtn_${day.id}" style="width:100%;margin-top:6px;padding:7px;border:1px dashed var(--border);border-radius:5px;background:transparent;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px">
+          ＋ 新增地點或備忘
+        </button>
       </div>
     </div>`;
   }).join('');
+}
+
+// Toggle inline add form for day items
+function toggleDayAddForm(dayId) {
+  const form = document.getElementById('dayAddForm_'+dayId);
+  const btn  = document.getElementById('dayAddBtn_'+dayId);
+  const show = form.style.display === 'none';
+  form.style.display = show ? '' : 'none';
+  btn.style.display  = show ? 'none' : 'flex';
+  if (show) document.getElementById('dayItemName_'+dayId)?.focus();
+}
+function cancelDayItem(dayId) {
+  document.getElementById('dayAddForm_'+dayId).style.display = 'none';
+  document.getElementById('dayAddBtn_'+dayId).style.display = 'flex';
+  ['dayItemName_','dayItemMemo_','dayItemUrl_'].forEach(p => {
+    const el = document.getElementById(p+dayId); if (el) el.value = '';
+  });
+}
+async function saveDayItem(dayId) {
+  const name = document.getElementById('dayItemName_'+dayId).value.trim();
+  if (!name) { alert('請填寫名稱'); return; }
+  const memo = document.getElementById('dayItemMemo_'+dayId).value.trim();
+  const url  = document.getElementById('dayItemUrl_'+dayId).value.trim();
+  const day  = days.find(d=>d.id===dayId);
+  if (!day) return;
+  if (!day.items) day.items = [];
+  day.items.push({ name, memo, url });
+  cancelDayItem(dayId);
+  renderItinerary();
+  showSync('⟳ 儲存...','var(--muted)');
+  const row = itinRowMap[day.id];
+  if (row) {
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+  }
+}
+async function removeDayItem(dayId, idx) {
+  const day = days.find(d=>d.id===dayId);
+  if (!day) return;
+  day.items.splice(idx, 1);
+  renderItinerary();
+  const row = itinRowMap[day.id];
+  if (row) {
+    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
+    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
+  }
 }
 
 // Inline note edit
