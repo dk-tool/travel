@@ -105,8 +105,7 @@ textarea{resize:vertical;min-height:60px;}
 .search-bar{position:relative;margin-bottom:8px;}
 .search-bar input{width:100%;padding:9px 12px 9px 32px;}
 .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
-.filter-btns{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
-.filter-btns::-webkit-scrollbar{display:none;}
+.filter-btns{display:flex;gap:5px;flex-wrap:wrap;padding-bottom:2px;}
 .filter-btn{padding:4px 10px;border:1px solid var(--border);border-radius:20px;font-size:11px;cursor:pointer;background:var(--white);color:var(--muted);white-space:nowrap;flex-shrink:0;font-family:'Noto Sans TC',sans-serif;}
 .filter-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
 .filter-btn.teal-active{background:var(--teal);color:white;border-color:var(--teal);}
