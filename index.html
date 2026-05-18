@@ -2001,9 +2001,62 @@ async function loadItinerary(force=false){
   }
   await _fetchItin();
 }
-let isSavingItin = false; // prevent fetch from overwriting during save
-
 let itinFetchId = 0; // request ID to prevent stale overwrites
+
+// ── Background save queue ──
+// Queue stores pending saves: { dayId, retries }
+// Debounced: coalesces multiple rapid changes to same day into one save
+const saveQueue = new Map(); // dayId → { timer, retries }
+const SAVE_DELAY = 1500; // ms to wait before saving
+const MAX_RETRIES = 3;
+
+function queueItinSave(dayId) {
+  // Cancel existing timer for this day
+  if (saveQueue.has(dayId)) {
+    clearTimeout(saveQueue.get(dayId).timer);
+  }
+  // Schedule new save
+  const timer = setTimeout(() => flushItinSave(dayId), SAVE_DELAY);
+  saveQueue.set(dayId, { timer, retries: 0 });
+  showSync('● 待儲存', 'var(--gold)');
+}
+
+async function flushItinSave(dayId, retries = 0) {
+  const day = days.find(d => d.id === dayId);
+  if (!day) { saveQueue.delete(dayId); return; }
+  const row = itinRowMap[day.id];
+  if (!row) {
+    // Row not found, re-fetch then retry
+    await _fetchItin();
+    const row2 = itinRowMap[day.id];
+    if (!row2) { showSync('❌ 找不到列', 'var(--red)'); saveQueue.delete(dayId); return; }
+  }
+  try {
+    itinFetchId++; // prevent fetch from overwriting
+    await gsUpdate(currentTrip.id + '_itinerary', itinRowMap[day.id], itinToRow(day));
+    saveCache('jp2_itin_' + currentTrip.id, days, { rowMap: itinRowMap });
+    saveQueue.delete(dayId);
+    // Show saved only if queue is empty
+    if (saveQueue.size === 0) showSync('✅', 'var(--sage)');
+  } catch(e) {
+    if (retries < MAX_RETRIES) {
+      showSync(`⟳ 重試 ${retries+1}/${MAX_RETRIES}...`, 'var(--gold)');
+      const timer = setTimeout(() => flushItinSave(dayId, retries + 1), 2000 * (retries + 1));
+      saveQueue.set(dayId, { timer, retries: retries + 1 });
+    } else {
+      showSync('❌ 儲存失敗', 'var(--red)');
+      saveQueue.delete(dayId);
+    }
+  }
+}
+
+async function flushAllPending() {
+  // Force save all pending items immediately
+  for (const [dayId, entry] of saveQueue) {
+    clearTimeout(entry.timer);
+    await flushItinSave(dayId);
+  }
+}
 
 async function _fetchItin(){
   if(!currentTrip) return;
@@ -2011,7 +2064,7 @@ async function _fetchItin(){
   try{
     const rows = await gsGet(currentTrip.id+'_itinerary');
     // If a newer fetch started, or we're currently saving, discard this result
-    if(myId !== itinFetchId || isSavingItin) return;
+    if(myId !== itinFetchId || saveQueue.size > 0) return;
     itinRowMap={}; days=[];
     for(let i=1;i<rows.length;i++){ const r=rows[i]; if(!r||!r[0]) continue; const d=rowToItin(r); if(d.id){ days.push(d); itinRowMap[d.id]=i+1; } }
     saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
@@ -2047,25 +2100,22 @@ async function sortDaysByDate(){
   days.forEach((d,i) => d.label = 'Day '+(i+1));
   renderItinerary();
   showSync('⟳ 儲存排序...','var(--muted)');
-  isSavingItin = true;
+  // Flush any pending saves first
+  await flushAllPending();
   itinFetchId++;
   try{
     const sheet = currentTrip.id+'_itinerary';
-    // Get current row count and delete all data rows from bottom up
     const rows = await gsGet(sheet);
     for(let i = rows.length; i >= 2; i--){
       await gsDel(sheet, i);
     }
-    // Re-append in sorted order
     for(const day of days){
       await gsAppend(sheet, itinToRow(day));
     }
     showSync('✅ 排序已儲存','var(--sage)');
-    isSavingItin = false;
     await _fetchItin();
   }catch(e){
     showSync('❌ '+e.message,'var(--red)');
-    isSavingItin = false;
   }
 }
 
@@ -2087,9 +2137,8 @@ async function addSpotToDay(dayId, spotId){
   renderItinerary();
   renderAddToItinDays();
   closeModal('addToItinBackdrop');
-  switchTab('spots'); // 自動回到景點頁
-  const row = itinRowMap[day.id];
-  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+  switchTab('spots');
+  queueItinSave(dayId);
 }
 
 // Remove spot from day
@@ -2098,8 +2147,7 @@ async function removeSpotFromDay(dayId, spotId){
   if(!day) return;
   day.entries = day.entries.filter(e=>!(e.type==='spot'&&e.spotId===spotId));
   renderItinerary();
-  const row = itinRowMap[day.id];
-  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+  queueItinSave(dayId);
 }
 
 // Move spot up/down within day
@@ -2112,8 +2160,7 @@ async function moveSpot(dayId, spotId, dir){
   const [moved] = day.entries.splice(idx,1);
   day.entries.splice(newIdx,0,moved);
   renderItinerary();
-  const row = itinRowMap[day.id];
-  if(row){ try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }catch(e){ showSync('❌ '+e.message,'var(--red)'); } }
+  queueItinSave(dayId);
 }
 
 // Save day note inline
@@ -2121,42 +2168,18 @@ async function saveDayNote(dayId, note){
   const day = days.find(d=>d.id===dayId);
   if(!day) return;
   day.note = note;
-  const row = itinRowMap[day.id];
-  if(row){
-    isSavingItin = true;
-    try{ await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
-    catch(e){ showSync('❌ '+e.message,'var(--red)'); }
-    finally { isSavingItin = false; }
-  }
+  queueItinSave(dayId);
 }
 
 // Save day date inline
 async function saveDayDate(dayId, date){
-  if (!date) return; // ignore empty
+  if (!date) return;
   const day = days.find(d=>d.id===dayId);
-  if (!day) return;
-  if (day.date === date) return; // no change
+  if (!day || day.date === date) return;
   day.date = date;
   renderItinerary();
   renderSpots();
-  const row = itinRowMap[day.id];
-  if (!row) {
-    showSync('❌ 找不到列，請重新整理', 'var(--red)');
-    return;
-  }
-  isSavingItin = true;
-  itinFetchId++;
-  const rowData = itinToRow(day);
-  showSync(`⟳ 存第${row}行 ${date}`, 'var(--muted)');
-  try {
-    await gsUpdate(currentTrip.id+'_itinerary', row, rowData);
-    saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
-    showSync(`✅ 已存 ${date}`, 'var(--sage)');
-  } catch(e) {
-    showSync('❌ '+e.message, 'var(--red)');
-  } finally {
-    isSavingItin = false;
-  }
+  queueItinSave(dayId);
 }
 // Render itinerary
 function renderItinerary(){
@@ -2465,14 +2488,7 @@ async function saveDayItem(dayId) {
   day.entries.push(item);
   cancelDayItem(dayId);
   renderItinerary();
-  showSync('⟳ 儲存...','var(--muted)');
-  const row = itinRowMap[day.id];
-  if (row) {
-    isSavingItin = true;
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-    finally { isSavingItin = false; }
-  }
+  queueItinSave(dayId);
 }
 
 // ── Entry functions (unified move/edit/remove) ──
@@ -2483,26 +2499,14 @@ async function moveEntry(dayId, idx, dir) {
   if (newIdx < 0 || newIdx >= day.entries.length) return;
   [day.entries[idx], day.entries[newIdx]] = [day.entries[newIdx], day.entries[idx]];
   renderItinerary();
-  const row = itinRowMap[day.id];
-  if (row) {
-    isSavingItin = true;
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-    finally { isSavingItin = false; }
-  }
+  queueItinSave(dayId);
 }
 async function removeEntry(dayId, idx) {
   const day = days.find(d=>d.id===dayId);
   if (!day) return;
   day.entries.splice(idx, 1);
   renderItinerary();
-  const row = itinRowMap[day.id];
-  if (row) {
-    isSavingItin = true;
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-    finally { isSavingItin = false; }
-  }
+  queueItinSave(dayId);
 }
 function toggleEditEntry(dayId, idx) {
   const body = document.getElementById('dayItemBody_'+dayId+'_'+idx);
@@ -2547,13 +2551,7 @@ async function saveEditEntry(dayId, idx) {
   }
   day.entries[idx] = updated;
   renderItinerary();
-  const row = itinRowMap[day.id];
-  if (row) {
-    isSavingItin = true;
-    try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap}); showSync('✅','var(--sage)'); }
-    catch(e) { showSync('❌ '+e.message,'var(--red)'); }
-    finally { isSavingItin = false; }
-  }
+  queueItinSave(dayId);
 }
 
 function startEditDayNote(dayId){
