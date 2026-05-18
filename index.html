@@ -2007,7 +2007,7 @@ let itinFetchId = 0; // request ID to prevent stale overwrites
 // Queue stores pending saves: { dayId, retries }
 // Debounced: coalesces multiple rapid changes to same day into one save
 const saveQueue = new Map(); // dayId → { timer, retries }
-const SAVE_DELAY = 1500; // ms to wait before saving
+const SAVE_DELAY = 800; // ms to wait before saving
 const MAX_RETRIES = 3;
 
 function queueItinSave(dayId) {
@@ -2900,6 +2900,27 @@ function updateBudgetFilters() {
   el.innerHTML = `<button class="filter-btn active" onclick="setBudgetFilter('all')">全部</button>
     ${cats.map(c=>`<button class="filter-btn" onclick="setBudgetFilter('${c}')">${getIcon(c,budgetCatIcons)} ${c}</button>`).join('')}`;
 }
+
+// ── Flush pending saves before page unload ──
+window.addEventListener('beforeunload', (e) => {
+  if (saveQueue.size === 0) return;
+  // Flush all pending saves synchronously
+  for (const [dayId, entry] of saveQueue) {
+    clearTimeout(entry.timer);
+    const day = days.find(d=>d.id===dayId);
+    const row = itinRowMap[dayId];
+    if (day && row) {
+      // Use sendBeacon for reliable background delivery
+      const body = JSON.stringify({
+        action: 'updateRow',
+        sheet: currentTrip?.id + '_itinerary',
+        row: row,
+        values: itinToRow(day)
+      });
+      navigator.sendBeacon(GAS_URL, body);
+    }
+  }
+});
 
 // ══════════════════════════════════════════
 // SWIPE TO SWITCH TAB
