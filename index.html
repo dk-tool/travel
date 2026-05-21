@@ -392,6 +392,15 @@ textarea{resize:vertical;min-height:60px;}
         </div>
 
         <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()" style="margin-top:16px">💾 儲存設定</button>
+        <!-- Payer management (shared across travel/life) -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
+          <label style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px">👤 付款人名單（記帳用）</label>
+          <div id="settings-payers" style="margin:6px 0"></div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <input type="text" id="new-payer" placeholder="新增成員名稱..." style="flex:1">
+            <button onclick="addSettingItemWithIcon('payers','','new-payer')" class="btn" style="width:50px;margin-top:0;padding:0;background:var(--ink);color:white">＋</button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="panel-itinerary" class="panel">
@@ -522,6 +531,15 @@ textarea{resize:vertical;min-height:60px;}
         <div class="form-group">
           <label>備註</label>
           <input type="text" id="bud-note" placeholder="e.g. 午餐 拉麵">
+        </div>
+        <div class="form-group">
+          <label>付款人</label>
+          <div style="display:flex;gap:6px">
+            <select id="bud-payer" style="flex:1;font-size:13px">
+              <option value="">未指定</option>
+            </select>
+            <input type="text" id="bud-payer-custom" placeholder="自訂" style="width:80px;font-size:13px" title="輸入自訂名稱">
+          </div>
         </div>
         <button class="btn" id="addBudgetBtn" onclick="addBudgetItem()" style="background:var(--gold);color:white;margin-top:8px">＋ 新增記帳</button>
       </div>
@@ -724,6 +742,12 @@ textarea{resize:vertical;min-height:60px;}
     </div>
     <div class="form-group"><label>日期</label><input type="date" id="eb-date"></div>
     <div class="form-group"><label>備註</label><input type="text" id="eb-note"></div>
+    <div class="form-group"><label>付款人</label>
+      <div style="display:flex;gap:6px">
+        <select id="eb-payer" style="flex:1;font-size:13px"><option value="">未指定</option></select>
+        <input type="text" id="eb-payer-custom" placeholder="自訂" style="width:80px;font-size:13px">
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('editBudgetBackdrop')">取消</button>
       <button class="btn" id="saveBudgetBtn" style="flex:2;margin-top:0;background:var(--gold);color:white" onclick="saveBudgetEdit()">💾 儲存</button>
@@ -1449,7 +1473,7 @@ function renderRegionChips(){
 // ══════════════════════════════════════════
 // BUDGET
 // ══════════════════════════════════════════
-const BUDGET_COLS = ['id','amount','currency','category','region','date','note','createdAt'];
+const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt'];
 let budgetItems=[], budgetRowMap={}, budgetFilter='all';
 let editBudgetId=null;
 let rates={}; // { JPY: 4.45, USD: 0.031, ... } (1 TWD = X 幣別)
@@ -1572,6 +1596,7 @@ async function addBudgetItem(){
     region:document.getElementById('bud-region').value,
     date:document.getElementById('bud-date').value||new Date().toISOString().slice(0,10),
     note:document.getElementById('bud-note').value.trim(),
+    payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW')
   };
   setBusy(true,'addBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
@@ -1611,6 +1636,13 @@ function openEditBudget(id){
   document.getElementById('eb-region').value=item.region||'';
   document.getElementById('eb-date').value=item.date||'';
   document.getElementById('eb-note').value=item.note||'';
+  const stdPayers = [...(settings.payers||[])];
+  const ebPayer = document.getElementById('eb-payer');
+  if (ebPayer) {
+    ebPayer.innerHTML = '<option value="">未指定</option>' + stdPayers.map(p=>`<option value="${p}">${p}</option>`).join('');
+    if (stdPayers.includes(item.payer||'')) { ebPayer.value=item.payer; document.getElementById('eb-payer-custom').value=''; }
+    else { ebPayer.value=''; document.getElementById('eb-payer-custom').value=item.payer||''; }
+  }
   updateEditTWDPreview();
   document.getElementById('editBudgetBackdrop').classList.add('open');
 }
@@ -1625,6 +1657,7 @@ async function saveBudgetEdit(){
   item.region=document.getElementById('eb-region').value;
   item.date=document.getElementById('eb-date').value;
   item.note=document.getElementById('eb-note').value.trim();
+  item.payer=document.getElementById('eb-payer-custom').value.trim()||document.getElementById('eb-payer').value||'';
   closeModal('editBudgetBackdrop');renderBudget();
   setBusy(true,'saveBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
   const row=budgetRowMap[item.id];
@@ -1646,6 +1679,8 @@ function clearBudgetForm(){
   document.getElementById('bud-region').value='';
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('bud-note').value='';
+  document.getElementById('bud-payer').value='';
+  document.getElementById('bud-payer-custom').value='';
   document.getElementById('twdPreview').textContent='';
 }
 
@@ -1663,6 +1698,14 @@ function renderBudget(){
     catTotals[item.category]=(catTotals[item.category]||0)+(toTWD(a,cur)||0);
   });
 
+  // Payer stats
+  const payerTotals = {};
+  budgetItems.forEach(item => {
+    const payer = item.payer || '未指定';
+    const twd = toTWD(parseFloat(item.amount)||0, item.currency);
+    payerTotals[payer] = (payerTotals[payer]||0) + (twd||0);
+  });
+
   const summaryEl=document.getElementById('budgetSummary');
   summaryEl.innerHTML=`<div class="budget-summary">
     <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px">💰 總花費</div>
@@ -1673,6 +1716,15 @@ function renderBudget(){
         <div class="budget-cat-pill">${catIcon[cat]||'📦'} ${cat} <span>NT$${Math.round(twd).toLocaleString()}</span></div>
       `).join('')}
     </div>
+    ${Object.keys(payerTotals).length > 0 ? `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;margin-bottom:6px">👤 各人花費</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${Object.entries(payerTotals).map(([payer,twd])=>`
+          <div class="budget-cat-pill">👤 ${payer} <span>NT$${Math.round(twd).toLocaleString()}</span></div>
+        `).join('')}
+      </div>
+    </div>` : ''}
   </div>`;
 
   const el=document.getElementById('budgetList');
@@ -1709,6 +1761,7 @@ function renderBudget(){
               <span>${item.category}</span>
               ${item.region?`<span>📍${item.region}</span>`:''}
               ${item.note?`<span>${item.note}</span>`:''}
+              ${item.payer?`<span>👤 ${item.payer}</span>`:''}
             </div>
           </div>
           <div class="budget-item-actions">
@@ -2692,6 +2745,7 @@ function applyModeToUI(trip) {
 // ══════════════════════════════════════════
 const SETTINGS_SHEET = 'Settings';
 const SETTINGS_DEFAULTS = {
+  payers:         [],
   shopCats:       ['食品','服飾','美妝','工藝品','紀念品','其他'],
   spotCats:       ['自然','歷史','美食','購物街','體驗','其他'],
   budgetCats:     ['餐飲','交通','住宿','購物','門票','其他'],
@@ -2754,6 +2808,7 @@ function applySettings() {
   updateSelectOptions('bud-cat',  s.budgetCats, budgetCatIcons);
   updateSelectOptions('eb-cat',   s.budgetCats, budgetCatIcons);
   renderSettingsPanel();
+  updatePayerSelects();
 }
 
 const shopCatIcons   = {'食品':'🍱','服飾':'👕','美妝':'💄','工藝品':'🏺','紀念品':'🎁','其他':'📦'};
@@ -2776,18 +2831,40 @@ function updateSelectOptions(elId, cats, iconMap) {
 }
 
 function renderSettingsPanel() {
-  // Travel settings chips
   renderSettingChips('settings-shop-cats',   'shopCats',   shopCatIcons);
   renderSettingChips('settings-spot-cats',   'spotCats',   spotCatIcons);
   renderSettingChips('settings-budget-cats', 'budgetCats', budgetCatIcons);
-  // Life settings chips
   renderSettingChips('settings-life-shop-cats',   'lifeShopCats',   shopCatIcons);
   renderSettingChips('settings-life-spot-cats',   'lifeSpotCats',   spotCatIcons);
   renderSettingChips('settings-life-budget-cats', 'lifeBudgetCats', budgetCatIcons);
-  // Update filter buttons based on current trip mode
+  // Payers
+  const payersEl = document.getElementById('settings-payers');
+  if (payersEl) {
+    const list = settings.payers || [];
+    payersEl.innerHTML = list.map((p,i)=>
+      `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px dashed var(--border)">
+        <span style="flex:1;font-size:13px">👤 ${p}</span>
+        <div style="display:flex;gap:3px">
+          <button onclick="moveSettingItem('payers',${i},-1)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:var(--paper);cursor:pointer;font-size:12px;${i===0?'opacity:0.3;pointer-events:none':''}">↑</button>
+          <button onclick="moveSettingItem('payers',${i},1)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:var(--paper);cursor:pointer;font-size:12px;${i===list.length-1?'opacity:0.3;pointer-events:none':''}">↓</button>
+          <button onclick="removeSettingItem('payers',${i})" style="width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:var(--paper);cursor:pointer;font-size:12px;color:var(--red)">×</button>
+        </div>
+      </div>`
+    ).join('');
+  }
   updateShopFilters();
   updateSpotFilters();
   updateBudgetFilters();
+  updatePayerSelects();
+}
+
+function updatePayerSelects() {
+  const payers = settings.payers || [];
+  const opts = '<option value="">未指定</option>' + payers.map(p=>`<option value="${p}">${p}</option>`).join('');
+  ['bud-payer','eb-payer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { const v = el.value; el.innerHTML = opts; if(payers.includes(v)) el.value = v; }
+  });
 }
 
 function renderSettingChips(containerId, settingKey, iconMap) {
