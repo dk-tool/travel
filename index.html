@@ -1837,9 +1837,14 @@ async function uploadToCloudinary(file) {
   fd.append('upload_preset', CLD_PRESET);
   fd.append('folder', 'travel');
   const resp = await fetch(CLD_URL, { method:'POST', body: fd });
-  if (!resp.ok) throw new Error('上傳失敗 HTTP '+resp.status);
   const data = await resp.json();
-  if (data.error) throw new Error(data.error.message);
+  if (!resp.ok || data.error) {
+    const msg = data.error?.message || `HTTP ${resp.status}`;
+    if (msg.includes('preset') || msg.includes('upload_preset')) {
+      throw new Error('請到 Cloudinary → Settings → Upload → 建立 Unsigned preset 名稱「travel_unsigned」');
+    }
+    throw new Error(msg);
+  }
   return data.secure_url;
 }
 
@@ -2588,10 +2593,11 @@ function renderItinerary(){
       <div style="border-top:1px dashed var(--border);padding:10px 12px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">📔 今日日記</div>
         ${(day.diaryPhotos||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">${(day.diaryPhotos||[]).map((url,pi)=>`<div style="position:relative"><img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="openPhotoViewer('${url}')"><button onclick="removeDiaryPhoto(${day.id},${pi})" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:11px">×</button></div>`).join('')}</div>` : ''}
-        <textarea id="diaryText_${day.id}" placeholder="今天的心得、感受..." style="width:100%;font-size:12px;min-height:50px;resize:vertical;border:1px solid var(--border);border-radius:5px;padding:6px;font-family:'Noto Sans TC',sans-serif;background:var(--paper)" onblur="saveDiaryText(${day.id},this.value)">${day.diary||''}</textarea>
+        <textarea id="diaryText_${day.id}" placeholder="今天的心得、感受..." style="width:100%;font-size:12px;min-height:60px;resize:vertical;border:1px solid var(--border);border-radius:5px;padding:6px;font-family:'Noto Sans TC',sans-serif;background:var(--paper)">${day.diary||''}</textarea>
         <div style="display:flex;gap:8px;margin-top:6px">
           <input type="file" id="diaryPhotoInput_${day.id}" accept="image/*" multiple style="display:none" onchange="uploadDiaryPhotos(event,${day.id})">
           <button onclick="document.getElementById('diaryPhotoInput_${day.id}').click()" style="flex:1;padding:6px;border:1px dashed var(--border);border-radius:5px;background:var(--paper);font-size:11px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 新增照片</button>
+          <button onclick="saveDiaryText(${day.id},document.getElementById('diaryText_${day.id}').value)" style="padding:6px 14px;border:none;border-radius:5px;background:var(--teal);color:white;font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;flex-shrink:0">💾 儲存</button>
         </div>
         <div id="diaryStatus_${day.id}" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px"></div>
       </div>
