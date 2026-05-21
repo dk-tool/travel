@@ -1661,7 +1661,16 @@ async function saveBudgetEdit(){
   closeModal('editBudgetBackdrop');renderBudget();
   setBusy(true,'saveBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
   const row=budgetRowMap[item.id];
-  if(row){try{await gsUpdate(currentTrip.id+'_budget',row,budgetToRow(item));saveCache('jp2_budget_'+currentTrip.id,budgetItems,{rowMap:budgetRowMap});showSync('✅ 已儲存','var(--sage)');}catch(e){showSync('❌ '+e.message,'var(--red)');}}
+  if(row){
+    try{
+      await gsUpdate(currentTrip.id+'_budget',row,budgetToRow(item));
+      saveCache('jp2_budget_'+currentTrip.id,budgetItems,{rowMap:budgetRowMap});
+      showSync('✅ 已儲存','var(--sage)');
+    }catch(e){
+      showSync('❌ '+e.message,'var(--red)');
+      console.error('saveBudgetEdit error:', e);
+    }
+  }
   setBusy(false,'saveBudgetBtn');
 }
 
