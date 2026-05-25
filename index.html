@@ -1530,7 +1530,8 @@ function renderRegionChips(){
 const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt'];
 let budgetItems=[], budgetRowMap={}, budgetFilter='all';
 let editBudgetId=null;
-let rates={}; // { JPY: 4.45, USD: 0.031, ... } (1 TWD = X 幣別)
+// Default rates as fallback (1 TWD = X 幣別)
+let rates = { JPY: 4.5, USD: 0.032, EUR: 0.029, KRW: 43, HKD: 0.25, CNY: 0.23 };
 const CK_RATES='jp2_rates';
 const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','其他':'📦'};
 
