@@ -765,6 +765,20 @@ textarea{resize:vertical;min-height:60px;}
   </div>
 </div>
 
+<!-- MODAL: Receipt Items -->
+<div class="modal-backdrop" id="receiptItemsBackdrop" onclick="closeModal('receiptItemsBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>🧾 收據明細確認</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">勾選要新增的品項，預設全選</p>
+    <div id="receiptItemsList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('receiptItemsBackdrop')">取消</button>
+      <button class="btn btn-primary" style="flex:2;margin-top:0" onclick="saveReceiptItems()">＋ 新增選取品項</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Spot Review -->
 <div class="modal-backdrop" id="reviewBackdrop" onclick="closeModal('reviewBackdrop',event)">
   <div class="modal">
@@ -1927,41 +1941,69 @@ async function handleReceiptScan(event) {
   try {
     const base64 = await fileToBase64(file);
     const mimeType = file.type || 'image/jpeg';
+    const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType });
 
-    const result = await gasCall({
-      action: 'scanReceipt',
-      imageBase64: base64,
-      mimeType: mimeType
-    });
-
-    if (result.amount && result.amount > 0)
-      document.getElementById('bud-amount').value = result.amount;
-    if (result.currency) {
-      const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
-      if (stdCurs.includes(result.currency)) {
-        document.getElementById('bud-currency').value = result.currency;
-        document.getElementById('bud-currency-custom').value = '';
-      } else {
-        document.getElementById('bud-currency-custom').value = result.currency;
-      }
+    if (result.items && result.items.length > 0) {
+      showReceiptItemsModal(result.items);
+      statusEl.textContent = `✅ 辨識到 ${result.items.length} 個品項`;
+      statusEl.style.color = 'var(--sage)';
+    } else {
+      statusEl.textContent = '❌ 辨識失敗，請重試';
+      statusEl.style.color = 'var(--red)';
     }
-    if (result.category) {
-      const validCats = ['餐飲','交通','住宿','購物','門票','其他'];
-      if (validCats.includes(result.category))
-        document.getElementById('bud-cat').value = result.category;
-    }
-    if (result.note) document.getElementById('bud-note').value = result.note;
-    if (result.date) document.getElementById('bud-date').value = result.date;
-
-    updateTWDPreview();
-    statusEl.textContent = '✅ 辨識完成，請確認後儲存';
-    statusEl.style.color = 'var(--sage)';
-
   } catch(e) {
     statusEl.textContent = '❌ 辨識失敗：' + e.message;
     statusEl.style.color = 'var(--red)';
   }
   event.target.value = '';
+}
+
+let receiptItems = [];
+
+function showReceiptItemsModal(items) {
+  receiptItems = items;
+  const el = document.getElementById('receiptItemsList');
+  el.innerHTML = items.map((item, i) => {
+    const twd = toTWD(item.amount, item.currency);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--border)">
+      <input type="checkbox" id="ri_${i}" checked style="width:18px;height:18px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${item.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${item.category} · ${item.amount} ${item.currency}${twd?' · ≈NT$'+Math.round(twd):''}</div>
+        ${item.date?`<div style="font-size:10px;color:var(--muted)">${item.date}</div>`:''}
+      </div>
+      <input type="number" value="${item.amount}" onchange="receiptItems[${i}].amount=parseFloat(this.value)||receiptItems[${i}].amount" style="width:70px;font-size:12px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 4px">
+    </div>`;
+  }).join('');
+  document.getElementById('receiptItemsBackdrop').classList.add('open');
+}
+
+async function saveReceiptItems() {
+  const today = new Date().toISOString().slice(0,10);
+  const region = document.getElementById('bud-region')?.value || '';
+  const selected = receiptItems.filter((_,i) => document.getElementById('ri_'+i)?.checked);
+  if (!selected.length) { alert('請至少選一個品項'); return; }
+  closeModal('receiptItemsBackdrop');
+  showSync('⟳ 新增中...', 'var(--muted)');
+  for (let idx = 0; idx < selected.length; idx++) {
+    const item = selected[idx];
+    const budItem = {
+      id: Date.now() + idx,
+      amount: item.amount,
+      currency: item.currency || 'JPY',
+      category: item.category || '其他',
+      region,
+      date: item.date || today,
+      note: item.name,
+      payer: '',
+      createdAt: new Date().toLocaleDateString('zh-TW')
+    };
+    budgetItems.unshift(budItem);
+    await gsAppend(currentTrip.id+'_budget', budgetToRow(budItem));
+  }
+  renderBudget();
+  showSync(`✅ 已新增 ${selected.length} 筆`, 'var(--sage)');
+  await _fetchBudget();
 }
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
