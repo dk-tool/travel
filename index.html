@@ -1971,9 +1971,10 @@ async function handleReceiptScan(event) {
 
   try {
     const base64 = await fileToBase64(file);
-    // Gemini supports: jpeg, png, webp, heic, heif
-    const supportedTypes = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
-    const mimeType = supportedTypes.includes(file.type) ? file.type : 'image/jpeg';
+    // Detect mimeType from file.type or filename extension
+    const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
+    const extMap = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', heic:'image/jpeg', heif:'image/jpeg', gif:'image/gif' };
+    const mimeType = file.type || extMap[ext] || 'image/jpeg';
     const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType });
 
     if (result.amount) {
