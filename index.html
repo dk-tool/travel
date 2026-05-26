@@ -1975,6 +1975,8 @@ async function handleReceiptScan(event) {
     const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType });
 
     if (result.amount) {
+      // Debug: show raw result
+      console.log('Receipt result:', JSON.stringify(result));
       // Fill form fields directly
       document.getElementById('bud-amount').value = result.amount;
       // Currency
