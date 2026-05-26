@@ -1971,7 +1971,9 @@ async function handleReceiptScan(event) {
 
   try {
     const base64 = await fileToBase64(file);
-    const mimeType = file.type || 'image/jpeg';
+    // Force jpeg for unsupported types (HEIC, WebP etc)
+    const mimeType = ['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)
+      ? file.type : 'image/jpeg';
     const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType });
 
     if (result.amount) {
@@ -1994,8 +1996,11 @@ async function handleReceiptScan(event) {
       if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
       // Date
       if (result.date) document.getElementById('bud-date').value = result.date;
-      // Note with items
-      if (result.note) document.getElementById('bud-note').value = result.note;
+      // Note with items - replace literal \n with actual newlines
+      if (result.note) {
+        const noteText = result.note.replace(/\\n/g, '\n');
+        document.getElementById('bud-note').value = noteText;
+      }
       updateTWDPreview();
       statusEl.textContent = '✅ 已填入表單，請確認後新增';
       statusEl.style.color = 'var(--sage)';
