@@ -432,6 +432,13 @@ textarea{resize:vertical;min-height:60px;}
         <button onclick="fetchRate()" style="padding:6px 10px;border:1px solid var(--border);border-radius:5px;background:var(--paper);font-size:12px;cursor:pointer;flex-shrink:0">🔄 更新</button>
         <span id="rateStatus" style="font-size:10px;color:var(--muted);width:100%"></span>
       </div>
+      <!-- Search -->
+      <div style="position:relative;margin-bottom:8px">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px">🔍</span>
+        <input type="text" id="budgetSearch" placeholder="搜尋備註、店名、品項..." 
+          style="width:100%;padding:8px 8px 8px 32px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--paper)"
+          oninput="renderBudget()">
+      </div>
       <!-- Filter -->
       <div class="filter-btns" id="budgetFilterBtns" style="margin-bottom:10px">
         <button class="filter-btn active" onclick="setBudgetFilter('all')">全部</button>
@@ -1763,7 +1770,16 @@ function clearBudgetForm(){
 }
 
 function renderBudget(){
-  const filtered=budgetFilter==='all'?budgetItems:budgetItems.filter(i=>i.category===budgetFilter);
+  const searchQ = (document.getElementById('budgetSearch')?.value||'').trim().toLowerCase();
+  const filtered = budgetItems.filter(i => {
+    const catMatch = budgetFilter==='all' || i.category===budgetFilter;
+    const searchMatch = !searchQ || 
+      (i.note||'').toLowerCase().includes(searchQ) ||
+      (i.category||'').toLowerCase().includes(searchQ) ||
+      (i.region||'').toLowerCase().includes(searchQ) ||
+      String(i.amount).includes(searchQ);
+    return catMatch && searchMatch;
+  });
 
   // Summary
   let totalByCur={}, totalTWD=0, catTotals={};
