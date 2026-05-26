@@ -2001,25 +2001,29 @@ async function saveReceiptItems() {
   if (!selected.length) { alert('請至少選一個品項'); return; }
   closeModal('receiptItemsBackdrop');
   showSync('⟳ 新增中...', 'var(--muted)');
-  for (let idx = 0; idx < selected.length; idx++) {
-    const item = selected[idx];
-    const budItem = {
-      id: Date.now() + idx,
-      amount: item.amount,
-      currency: item.currency || 'JPY',
-      category: item.category || '其他',
-      region,
-      date: item.date || today,
-      note: item.name,
-      payer: '',
-      createdAt: new Date().toLocaleDateString('zh-TW')
-    };
-    budgetItems.unshift(budItem);
-    await gsAppend(currentTrip.id+'_budget', budgetToRow(budItem));
+  try {
+    for (let idx = 0; idx < selected.length; idx++) {
+      const item = selected[idx];
+      const budItem = {
+        id: Date.now() + idx,
+        amount: String(item.amount),
+        currency: item.currency || 'JPY',
+        category: item.category || '其他',
+        region,
+        date: item.date || today,
+        note: item.name,
+        payer: '',
+        createdAt: new Date().toLocaleDateString('zh-TW')
+      };
+      budgetItems.unshift(budItem);
+      await gsAppend(currentTrip.id+'_budget', budgetToRow(budItem));
+    }
+    saveCache('jp2_budget_'+currentTrip.id, budgetItems, {rowMap:budgetRowMap});
+    renderBudget();
+    showSync(`✅ 已新增 ${selected.length} 筆`, 'var(--sage)');
+  } catch(e) {
+    showSync('❌ '+e.message, 'var(--red)');
   }
-  renderBudget();
-  showSync(`✅ 已新增 ${selected.length} 筆`, 'var(--sage)');
-  await _fetchBudget();
 }
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
