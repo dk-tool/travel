@@ -1970,12 +1970,12 @@ async function handleReceiptScan(event) {
   statusEl.style.wordBreak = 'normal';
 
   try {
-    const base64 = await fileToBase64(file);
+    const base64 = await fileToBase64Compressed(file, 1600);
     // Detect mimeType from file.type or filename extension
     const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
     const extMap = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', heic:'image/jpeg', heif:'image/jpeg', gif:'image/gif' };
     const mimeType = file.type || extMap[ext] || 'image/jpeg';
-    const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType });
+    const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType:'image/jpeg' });
 
     if (result.amount) {
       // Debug: show raw result
@@ -2087,6 +2087,28 @@ function fileToBase64(file) {
     reader.onload = e => resolve(e.target.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+function fileToBase64Compressed(file, maxSize=1600) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let {width, height} = img;
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize/width, maxSize/height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      res(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    };
+    img.onerror = () => fileToBase64(file).then(res).catch(rej);
+    img.src = url;
   });
 }
 
