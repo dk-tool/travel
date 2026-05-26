@@ -1975,9 +1975,30 @@ async function handleReceiptScan(event) {
     const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType });
 
     if (result.amount) {
-      showReceiptConfirmModal(result);
-      statusEl.textContent = '✅ 辨識完成，請確認';
+      // Fill form fields directly
+      document.getElementById('bud-amount').value = result.amount;
+      // Currency
+      const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
+      const cur = result.currency || 'JPY';
+      if (stdCurs.includes(cur)) {
+        document.getElementById('bud-currency').value = cur;
+        document.getElementById('bud-currency-custom').value = '';
+      } else {
+        document.getElementById('bud-currency-custom').value = cur;
+      }
+      // Category
+      const validCats = getActiveSettings().budgetCats;
+      const cat = result.category || '';
+      if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
+      // Date
+      if (result.date) document.getElementById('bud-date').value = result.date;
+      // Note with items
+      if (result.note) document.getElementById('bud-note').value = result.note;
+      updateTWDPreview();
+      statusEl.textContent = '✅ 已填入表單，請確認後新增';
       statusEl.style.color = 'var(--sage)';
+      // Scroll to form
+      document.getElementById('bud-amount').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
       statusEl.textContent = '❌ 辨識失敗，請重試';
       statusEl.style.color = 'var(--red)';
