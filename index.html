@@ -1666,12 +1666,24 @@ async function addBudgetItem(){
   const amount=document.getElementById('bud-amount').value.trim();
   if(!amount){alert('請填寫金額');return;}
   const currency=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
+  const date=document.getElementById('bud-date').value||new Date().toISOString().slice(0,10);
+  const note=document.getElementById('bud-note').value.trim();
+
+  // Duplicate check: same date + same amount + same currency
+  const duplicate = budgetItems.find(i =>
+    i.date === date &&
+    parseFloat(i.amount) === parseFloat(amount) &&
+    (i.currency||'JPY') === currency
+  );
+  if (duplicate) {
+    const msg = `⚠️ 可能重複！\n${date} 已有相同金額 ${amount} ${currency}${duplicate.note?'\n備註：'+duplicate.note.slice(0,40):''}\n\n確定要繼續新增嗎？`;
+    if (!confirm(msg)) return;
+  }
   const item={
     id:Date.now(),amount,currency,
     category:document.getElementById('bud-cat').value,
     region:document.getElementById('bud-region').value,
-    date:document.getElementById('bud-date').value||new Date().toISOString().slice(0,10),
-    note:document.getElementById('bud-note').value.trim(),
+    date, note,
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW')
   };
