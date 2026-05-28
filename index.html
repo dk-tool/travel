@@ -1593,18 +1593,27 @@ const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','
 
 function budgetToRow(item){return BUDGET_COLS.map(k=>item[k]??'');}
 function rowToBudget(row){
-  const i={};
-  // Check if old format (8 cols without time) or new format (10 cols with time)
-  // Old: id,amount,currency,category,region,date,note,payer,createdAt (9 cols)
-  // New: id,amount,currency,category,region,date,time,note,payer,createdAt (10 cols)
-  const hasTime = row.length >= 10 || (row[6] && row[6].match(/^\d{2}:\d{2}$/));
-  if (!hasTime && row.length <= 9) {
-    // Old format - map without time
-    const oldCols = ['id','amount','currency','category','region','date','note','payer','createdAt'];
-    oldCols.forEach((k,n)=>{if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});
-    i.time = '';
+  const i = {};
+  // Detect format by checking if row[6] looks like a time (HH:MM) or not
+  // Old format: id,amount,currency,category,region,date,note,payer,createdAt (9 cols)
+  // New format: id,amount,currency,category,region,date,time,note,payer,createdAt (10 cols)
+  const col6 = (row[6]||'').toString().trim();
+  const isNewFormat = /^\d{1,2}:\d{2}$/.test(col6) || col6 === '' && row.length >= 10;
+  
+  if (isNewFormat) {
+    // New format with time column
+    BUDGET_COLS.forEach((k,n) => {
+      if (k==='id') i[k] = parseInt(row[n])||0;
+      else i[k] = row[n]||'';
+    });
   } else {
-    BUDGET_COLS.forEach((k,n)=>{if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});
+    // Old format without time column
+    const oldCols = ['id','amount','currency','category','region','date','note','payer','createdAt'];
+    oldCols.forEach((k,n) => {
+      if (k==='id') i[k] = parseInt(row[n])||0;
+      else i[k] = row[n]||'';
+    });
+    i.time = '';
   }
   return i;
 }
