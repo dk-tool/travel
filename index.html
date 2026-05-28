@@ -1587,7 +1587,22 @@ const CK_RATES='jp2_rates';
 const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','其他':'📦'};
 
 function budgetToRow(item){return BUDGET_COLS.map(k=>item[k]??'');}
-function rowToBudget(row){const i={};BUDGET_COLS.forEach((k,n)=>{if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});return i;}
+function rowToBudget(row){
+  const i={};
+  // Check if old format (8 cols without time) or new format (10 cols with time)
+  // Old: id,amount,currency,category,region,date,note,payer,createdAt (9 cols)
+  // New: id,amount,currency,category,region,date,time,note,payer,createdAt (10 cols)
+  const hasTime = row.length >= 10 || (row[6] && row[6].match(/^\d{2}:\d{2}$/));
+  if (!hasTime && row.length <= 9) {
+    // Old format - map without time
+    const oldCols = ['id','amount','currency','category','region','date','note','payer','createdAt'];
+    oldCols.forEach((k,n)=>{if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});
+    i.time = '';
+  } else {
+    BUDGET_COLS.forEach((k,n)=>{if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});
+  }
+  return i;
+}
 
 // Rates
 async function fetchRate(silent=false){
