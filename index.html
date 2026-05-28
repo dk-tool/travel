@@ -1127,12 +1127,17 @@ async function selectTrip(id){
   // 背景同步 - 全部並行載入
   showSync('🔄 同步中...', 'var(--muted)');
   await loadSettings();
-  await Promise.all([
-    loadShopItems(),
-    loadSpotItems(),
-    loadBudgetItems(),
-    loadItinerary()
-  ]);
+  try {
+    await Promise.all([
+      loadShopItems(),
+      loadSpotItems(),
+      loadBudgetItems(),
+      loadItinerary()
+    ]);
+  } catch(e) {
+    console.error('Background sync error:', e);
+    showSync('⚠️ 部分同步失敗', 'var(--gold)');
+  }
 }
 
 function goToTrips(){
