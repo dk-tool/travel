@@ -3347,6 +3347,17 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
+// Restore trip when returning from camera/other app
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !currentTrip) {
+    const lastId = localStorage.getItem('jp2_lastTrip');
+    if (lastId && trips.length) {
+      const lastTrip = trips.find(t => String(t.id) === String(lastId));
+      if (lastTrip) selectTrip(lastTrip.id);
+    }
+  }
+});
+
 // ══════════════════════════════════════════
 // SWIPE TO SWITCH TAB
 // ══════════════════════════════════════════
