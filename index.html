@@ -1986,52 +1986,58 @@ async function handleReceiptScan(event) {
   statusEl.style.whiteSpace = 'normal';
   statusEl.style.wordBreak = 'normal';
 
-  try {
-    const base64 = await fileToBase64Compressed(file, 1600);
-    // Detect mimeType from file.type or filename extension
-    const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
-    const extMap = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', heic:'image/jpeg', heif:'image/jpeg', gif:'image/gif' };
-    const mimeType = file.type || extMap[ext] || 'image/jpeg';
-    const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType:'image/jpeg' });
+  let retryCount = 0;
+  const maxRetries = 3;
+  const file2 = file; // keep reference
 
-    if (result.amount) {
-      // Debug: show raw result
-      console.log('Receipt result:', JSON.stringify(result));
-      // Fill form fields directly
-      document.getElementById('bud-amount').value = result.amount;
-      // Currency
-      const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
-      const cur = result.currency || 'JPY';
-      if (stdCurs.includes(cur)) {
-        document.getElementById('bud-currency').value = cur;
-        document.getElementById('bud-currency-custom').value = '';
+  const fillForm = (result) => {
+    document.getElementById('bud-amount').value = result.amount;
+    const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
+    const cur = result.currency || 'JPY';
+    if (stdCurs.includes(cur)) { document.getElementById('bud-currency').value = cur; document.getElementById('bud-currency-custom').value=''; }
+    else { document.getElementById('bud-currency-custom').value = cur; }
+    const validCats = getActiveSettings().budgetCats;
+    const cat = result.category || '';
+    if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
+    if (result.date) document.getElementById('bud-date').value = result.date;
+    if (result.note) document.getElementById('bud-note').value = result.note.replace(/\\n/g,'\n');
+    updateTWDPreview();
+    statusEl.textContent = '✅ 已填入表單，請確認後新增';
+    statusEl.style.color = 'var(--sage)';
+    document.getElementById('bud-amount').scrollIntoView({ behavior:'smooth', block:'center' });
+  };
+
+  const doScan = async () => {
+    try {
+      const base64 = await fileToBase64Compressed(file2, 1600);
+      const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType:'image/jpeg' });
+      if (result.amount) { fillForm(result); }
+      else { statusEl.textContent = '❌ 辨識失敗，請重試'; statusEl.style.color = 'var(--red)'; }
+    } catch(e) {
+      const isRetryable = e.message && (e.message.includes('high demand') || e.message.includes('overloaded') || e.message.includes('503') || e.message.includes('429') || e.message.includes('temporarily'));
+      if (isRetryable && retryCount < maxRetries) {
+        retryCount++;
+        const waitSec = retryCount * 5;
+        let remaining = waitSec;
+        const countdown = setInterval(() => {
+          statusEl.textContent = `⏳ 伺服器忙碌，${remaining} 秒後自動重試（${retryCount}/${maxRetries}）`;
+          statusEl.style.color = 'var(--gold)';
+          remaining--;
+          if (remaining < 0) {
+            clearInterval(countdown);
+            statusEl.textContent = `⟳ 重試中（${retryCount}/${maxRetries}）...`;
+            statusEl.style.color = 'var(--muted)';
+            doScan();
+          }
+        }, 1000);
       } else {
-        document.getElementById('bud-currency-custom').value = cur;
+        statusEl.textContent = '❌ 辨識失敗：' + e.message;
+        statusEl.style.color = 'var(--red)';
       }
-      // Category
-      const validCats = getActiveSettings().budgetCats;
-      const cat = result.category || '';
-      if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
-      // Date
-      if (result.date) document.getElementById('bud-date').value = result.date;
-      // Note with items - replace literal \n with actual newlines
-      if (result.note) {
-        const noteText = result.note.replace(/\\n/g, '\n');
-        document.getElementById('bud-note').value = noteText;
-      }
-      updateTWDPreview();
-      statusEl.textContent = '✅ 已填入表單，請確認後新增';
-      statusEl.style.color = 'var(--sage)';
-      // Scroll to form
-      document.getElementById('bud-amount').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      statusEl.textContent = '❌ 辨識失敗，請重試';
-      statusEl.style.color = 'var(--red)';
     }
-  } catch(e) {
-    statusEl.textContent = '❌ 辨識失敗：' + e.message;
-    statusEl.style.color = 'var(--red)';
-  }
+  };
+
+  await doScan();
   event.target.value = '';
 }
 
