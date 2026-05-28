@@ -772,6 +772,23 @@ textarea{resize:vertical;min-height:60px;}
   </div>
 </div>
 
+<!-- MODAL: Add Store to Itinerary -->
+<div class="modal-backdrop" id="storeItinBackdrop" onclick="closeModal('storeItinBackdrop',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>📍 加入行程？</h3>
+    <p id="storeItinMsg" style="font-size:13px;color:var(--ink);margin-bottom:12px"></p>
+    <div class="form-group">
+      <label>加入哪一天</label>
+      <select id="storeItinDay" style="width:100%"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('storeItinBackdrop')">不用了</button>
+      <button class="btn btn-teal" style="flex:2;margin-top:0" onclick="confirmAddStoreToItin()">＋ 加入行程</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Receipt Confirm -->
 <div class="modal-backdrop" id="receiptItemsBackdrop" onclick="closeModal('receiptItemsBackdrop',event)">
   <div class="modal">
@@ -1703,6 +1720,8 @@ async function addBudgetItem(){
     clearBudgetForm();switchTab('budget');renderBudget();
     showSync('✅ 已新增','var(--sage)');
     await _fetchBudget();
+    // Suggest adding to itinerary if store name found in note
+    suggestAddToItinerary(item);
   }catch(e){showSync('❌ '+e.message,'var(--red)');alert('新增失敗：'+e.message);}
   setBusy(false,'addBudgetBtn');
 }
@@ -2393,7 +2412,54 @@ async function removeDiaryPhoto(dayId, idx) {
   queueItinSave(dayId);
 }
 
-// ── Background save queue ──
+// Suggest adding store to itinerary after budget save
+let pendingStoreEntry = null;
+
+function suggestAddToItinerary(budgetItem) {
+  if (!days.length) return;
+  // Extract store name: first line of note before \n
+  const firstLine = (budgetItem.note||'').split('\n')[0].trim();
+  if (!firstLine || firstLine.length < 2) return;
+
+  // Find matching day by date
+  const matchDay = days.find(d => d.date === budgetItem.date);
+  if (!matchDay) return; // Only suggest if there's a matching day
+
+  const region = budgetItem.region || (currentTrip?.regions||[])[0] || '';
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstLine + (region ? ' ' + region : ''))}`;
+
+  pendingStoreEntry = {
+    type: 'place',
+    name: firstLine,
+    memo: '',
+    url: mapsUrl
+  };
+
+  // Fill modal
+  document.getElementById('storeItinMsg').textContent = `偵測到店家「${firstLine}」，要加入 ${budgetItem.date} 的行程嗎？`;
+
+  // Fill day selector
+  const sel = document.getElementById('storeItinDay');
+  sel.innerHTML = days.map(d =>
+    `<option value="${d.id}" ${d.id === matchDay.id ? 'selected' : ''}>${d.label}${d.date ? ' ' + d.date : ''}</option>`
+  ).join('');
+
+  document.getElementById('storeItinBackdrop').classList.add('open');
+}
+
+async function confirmAddStoreToItin() {
+  if (!pendingStoreEntry) return;
+  const dayId = parseInt(document.getElementById('storeItinDay').value);
+  const day = days.find(d => d.id === dayId);
+  if (!day) return;
+  if (!day.entries) day.entries = [];
+  day.entries.push(pendingStoreEntry);
+  closeModal('storeItinBackdrop');
+  showSync('⟳ 加入行程...', 'var(--muted)');
+  queueItinSave(dayId);
+  showSync('✅ 已加入行程', 'var(--sage)');
+  pendingStoreEntry = null;
+}
 // Queue stores pending saves: { dayId, retries }
 // Debounced: coalesces multiple rapid changes to same day into one save
 const saveQueue = new Map(); // dayId → { timer, retries }
