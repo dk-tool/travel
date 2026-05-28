@@ -2481,15 +2481,48 @@ async function importBudgetToItin() {
     );
     if (alreadyIn) continue;
 
-    // Add entry with Maps URL
+    // Build entry based on category
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstLine + (region ? ' ' + region : ''))}`;
+
+    let entry;
+    if (item.category === '交通') {
+      // Try to extract from→to from note
+      const arrowMatch = (item.note||'').match(/(.+?)\s*[→→]\s*(.+?)(?:\n|$)/);
+      if (arrowMatch) {
+        entry = {
+          type: 'transport',
+          from: arrowMatch[1].trim(),
+          to: arrowMatch[2].trim(),
+          mode: '🚅 電車',
+          time: item.time || '',
+          fare: `¥${item.amount}`,
+          note: '',
+          _time: item.time || ''
+        };
+      } else {
+        entry = {
+          type: 'transport',
+          from: firstLine,
+          to: '',
+          mode: '🚅 電車',
+          time: item.time || '',
+          fare: `¥${item.amount}`,
+          note: '',
+          _time: item.time || ''
+        };
+      }
+    } else {
+      entry = {
+        type: 'place',
+        name: firstLine,
+        memo: item.time ? `🕐 ${item.time}` : '',
+        url: mapsUrl,
+        _time: item.time || ''
+      };
+    }
+
     if (!day.entries) day.entries = [];
-    day.entries.push({
-      type:'place', name:firstLine,
-      memo: item.time ? `🕐 ${item.time}` : '',
-      url: mapsUrl,
-      _time: item.time || ''
-    });
+    day.entries.push(entry);
     added++;
   }
 
