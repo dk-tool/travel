@@ -751,7 +751,12 @@ textarea{resize:vertical;min-height:60px;}
       </div>
       <div class="form-group"><label>地區</label><select id="eb-region"><option value="">不限</option></select></div>
     </div>
-    <div class="form-group"><label>日期</label><input type="date" id="eb-date"></div>
+    <div class="form-group"><label>日期 & 時間</label>
+      <div style="display:flex;gap:8px">
+        <input type="date" id="eb-date" style="flex:2">
+        <input type="time" id="eb-time" style="flex:1;font-size:13px">
+      </div>
+    </div>
     <div class="form-group"><label>備註</label><textarea id="eb-note" style="min-height:60px;resize:vertical;width:100%;font-family:'Noto Sans TC',sans-serif;font-size:13px"></textarea></div>
     <div class="form-group"><label>付款人</label>
       <div style="display:flex;gap:6px">
@@ -1771,6 +1776,7 @@ function openEditBudget(id){
   document.getElementById('eb-cat').value=item.category||'餐飲';
   document.getElementById('eb-region').value=item.region||'';
   document.getElementById('eb-date').value=item.date||'';
+  document.getElementById('eb-time').value=item.time||'';
   document.getElementById('eb-note').value=item.note||'';
   const stdPayers = [...(settings.payers||[])];
   const ebPayer = document.getElementById('eb-payer');
@@ -1792,6 +1798,7 @@ async function saveBudgetEdit(){
   item.category=document.getElementById('eb-cat').value;
   item.region=document.getElementById('eb-region').value;
   item.date=document.getElementById('eb-date').value;
+  item.time=document.getElementById('eb-time')?.value||'';
   item.note=document.getElementById('eb-note').value.trim();
   item.payer=document.getElementById('eb-payer-custom').value.trim()||document.getElementById('eb-payer').value||'';
   closeModal('editBudgetBackdrop');renderBudget();
