@@ -2472,21 +2472,24 @@ async function importBudgetToItin() {
 
   renderItinerary();
   showSync('⟳ 儲存中...', 'var(--muted)');
+  isSavingItin = true;
+  itinFetchId++;
   const modifiedDays = days.filter(d =>
     budgetItems.some(b => b.date === d.date && b.note)
   );
-  for (const day of modifiedDays) {
-    const row = itinRowMap[day.id];
-    if (row) {
-      isSavingItin = true;
-      try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); }
-      catch(e) { console.error(e); }
-      finally { isSavingItin = false; }
+  try {
+    for (const day of modifiedDays) {
+      const row = itinRowMap[day.id];
+      if (row) await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day));
     }
+    saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
+    showSync(`✅ 已匯入 ${added} 個地點`, 'var(--sage)');
+    alert(`已匯入 ${added} 個地點到行程！`);
+  } catch(e) {
+    showSync('❌ '+e.message, 'var(--red)');
+  } finally {
+    isSavingItin = false;
   }
-  saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
-  showSync(`✅ 已匯入 ${added} 個地點`, 'var(--sage)');
-  alert(`已匯入 ${added} 個地點到行程！`);
 }
 let pendingStoreEntry = null;
 
