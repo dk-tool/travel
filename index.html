@@ -533,11 +533,9 @@ textarea{resize:vertical;min-height:60px;}
           </div>
         </div>
         <div class="form-group">
-          <label>日期 & 時間</label>
-          <div style="display:flex;gap:8px">
-            <input type="date" id="bud-date" style="flex:2">
+          <label>日期</label>
+            <input type="date" id="bud-date">
             <input type="time" id="bud-time" style="flex:1;font-size:13px">
-          </div>
         </div>
         <div class="form-group">
           <label>備註</label>
@@ -751,12 +749,7 @@ textarea{resize:vertical;min-height:60px;}
       </div>
       <div class="form-group"><label>地區</label><select id="eb-region"><option value="">不限</option></select></div>
     </div>
-    <div class="form-group"><label>日期 & 時間</label>
-      <div style="display:flex;gap:8px">
-        <input type="date" id="eb-date" style="flex:2">
-        <input type="time" id="eb-time" style="flex:1;font-size:13px">
-      </div>
-    </div>
+    <div class="form-group"><label>日期</label><input type="date" id="eb-date"></div>
     <div class="form-group"><label>備註</label><textarea id="eb-note" style="min-height:60px;resize:vertical;width:100%;font-family:'Noto Sans TC',sans-serif;font-size:13px"></textarea></div>
     <div class="form-group"><label>付款人</label>
       <div style="display:flex;gap:6px">
@@ -1583,7 +1576,7 @@ function renderRegionChips(){
 // ══════════════════════════════════════════
 // BUDGET
 // ══════════════════════════════════════════
-const BUDGET_COLS = ['id','amount','currency','category','region','date','time','note','payer','createdAt'];
+const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt'];
 let budgetItems=[], budgetRowMap={}, budgetFilter='all';
 let editBudgetId=null;
 // Default rates as fallback (1 TWD = X 幣別)
@@ -1594,27 +1587,11 @@ const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','
 function budgetToRow(item){return BUDGET_COLS.map(k=>item[k]??'');}
 function rowToBudget(row){
   const i = {};
-  // Detect format by checking if row[6] looks like a time (HH:MM) or not
-  // Old format: id,amount,currency,category,region,date,note,payer,createdAt (9 cols)
-  // New format: id,amount,currency,category,region,date,time,note,payer,createdAt (10 cols)
-  const col6 = (row[6]||'').toString().trim();
-  const isNewFormat = /^\d{1,2}:\d{2}$/.test(col6) || col6 === '' && row.length >= 10;
-  
-  if (isNewFormat) {
-    // New format with time column
-    BUDGET_COLS.forEach((k,n) => {
-      if (k==='id') i[k] = parseInt(row[n])||0;
-      else i[k] = row[n]||'';
-    });
-  } else {
-    // Old format without time column
-    const oldCols = ['id','amount','currency','category','region','date','note','payer','createdAt'];
-    oldCols.forEach((k,n) => {
-      if (k==='id') i[k] = parseInt(row[n])||0;
-      else i[k] = row[n]||'';
-    });
-    i.time = '';
-  }
+  BUDGET_COLS.forEach((k,n) => {
+    if (k==='id') i[k] = parseInt(row[n])||0;
+    else i[k] = row[n]||'';
+  });
+  i.time = '';
   return i;
 }
 
@@ -1726,7 +1703,6 @@ async function addBudgetItem(){
   if(!amount){alert('請填寫金額');return;}
   const currency=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
   const date=document.getElementById('bud-date').value||new Date().toISOString().slice(0,10);
-  const time=document.getElementById('bud-time')?.value||'';
   const note=document.getElementById('bud-note').value.trim();
 
   // Duplicate check: same date + same amount + same currency
@@ -1743,7 +1719,7 @@ async function addBudgetItem(){
     id:Date.now(),amount,currency,
     category:document.getElementById('bud-cat').value,
     region:document.getElementById('bud-region').value,
-    date, time, note,
+    date, note,
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW')
   };
@@ -1785,7 +1761,6 @@ function openEditBudget(id){
   document.getElementById('eb-cat').value=item.category||'餐飲';
   document.getElementById('eb-region').value=item.region||'';
   document.getElementById('eb-date').value=item.date||'';
-  document.getElementById('eb-time').value=item.time||'';
   document.getElementById('eb-note').value=item.note||'';
   const stdPayers = [...(settings.payers||[])];
   const ebPayer = document.getElementById('eb-payer');
@@ -1807,7 +1782,6 @@ async function saveBudgetEdit(){
   item.category=document.getElementById('eb-cat').value;
   item.region=document.getElementById('eb-region').value;
   item.date=document.getElementById('eb-date').value;
-  item.time=document.getElementById('eb-time')?.value||'';
   item.note=document.getElementById('eb-note').value.trim();
   item.payer=document.getElementById('eb-payer-custom').value.trim()||document.getElementById('eb-payer').value||'';
   closeModal('editBudgetBackdrop');renderBudget();
@@ -1851,7 +1825,6 @@ function clearBudgetForm(){
   document.getElementById('bud-region').value='';
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('bud-note').value='';
-  document.getElementById('bud-time').value='';
   document.getElementById('bud-payer').value='';
   document.getElementById('bud-payer-custom').value='';
   document.getElementById('twdPreview').textContent='';
