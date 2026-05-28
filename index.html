@@ -1826,6 +1826,17 @@ async function saveBudgetEdit(){
   setBusy(false,'saveBudgetBtn');
 }
 
+let budgetPayerFilter = '';
+
+function filterByPayer(payer) {
+  if (budgetPayerFilter === payer) {
+    budgetPayerFilter = ''; // toggle off
+  } else {
+    budgetPayerFilter = payer;
+  }
+  renderBudget();
+}
+
 function setBudgetFilter(f){
   budgetFilter=f;
   document.querySelectorAll('#panel-budget .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
@@ -1850,12 +1861,13 @@ function renderBudget(){
   const searchQ = (document.getElementById('budgetSearch')?.value||'').trim().toLowerCase();
   const filtered = budgetItems.filter(i => {
     const catMatch = budgetFilter==='all' || i.category===budgetFilter;
-    const searchMatch = !searchQ || 
+    const payerMatch = !budgetPayerFilter || (i.payer||'未指定') === budgetPayerFilter;
+    const searchMatch = !searchQ ||
       (i.note||'').toLowerCase().includes(searchQ) ||
       (i.category||'').toLowerCase().includes(searchQ) ||
       (i.region||'').toLowerCase().includes(searchQ) ||
       String(i.amount).includes(searchQ);
-    return catMatch && searchMatch;
+    return catMatch && payerMatch && searchMatch;
   });
 
   // Summary
@@ -1892,7 +1904,7 @@ function renderBudget(){
       <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;margin-bottom:6px">👤 各人花費</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${Object.entries(payerTotals).map(([payer,twd])=>`
-          <div class="budget-cat-pill">👤 ${payer} <span>NT$${Math.round(twd).toLocaleString()}</span></div>
+          <div class="budget-cat-pill" onclick="filterByPayer('${payer}')" style="cursor:pointer;${budgetPayerFilter===payer?'background:var(--teal);color:white;':''}">👤 ${payer} <span>NT$${Math.round(twd).toLocaleString()}</span></div>
         `).join('')}
       </div>
     </div>` : ''}
