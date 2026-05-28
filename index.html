@@ -1087,6 +1087,8 @@ async function deleteTrip(id){
 
 async function selectTrip(id){
   currentTrip=trips.find(t=>t.id===id);if(!currentTrip)return;
+  // Remember last trip
+  localStorage.setItem('jp2_lastTrip', id);
   document.getElementById('headerTitle').textContent=`${currentTrip.icon} ${currentTrip.name}`;
   document.getElementById('headerSub').textContent=(currentTrip.regions||[]).join('・')||'旅遊紀錄';
   const opts=`<option value="">不限</option>${(currentTrip.regions||[]).map(r=>`<option value="${r}">${r}</option>`).join('')}`;
@@ -1142,6 +1144,7 @@ async function selectTrip(id){
 
 function goToTrips(){
   currentTrip=null;shopItems=[];spotItems=[];
+  localStorage.removeItem('jp2_lastTrip');
   document.getElementById('screen-shopping').classList.remove('active');
   document.getElementById('screen-trips').classList.add('active');
   document.getElementById('headerTitle').textContent='🇯🇵 日本旅遊紀錄';
@@ -3440,6 +3443,12 @@ async function loadSettings() {
     trips = c.data;
     renderTripList();
     showSync('🔄 同步中...', 'var(--muted)');
+    // Auto-resume last trip
+    const lastId = localStorage.getItem('jp2_lastTrip');
+    if (lastId) {
+      const lastTrip = trips.find(t => String(t.id) === String(lastId));
+      if (lastTrip) selectTrip(lastTrip.id);
+    }
   }
 })();
 
