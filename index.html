@@ -407,6 +407,7 @@ textarea{resize:vertical;min-height:60px;}
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <button onclick="addDay()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--teal);color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">＋ 新增天數</button>
         <button onclick="sortDaysByDate()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--paper);color:var(--muted);border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">📅 依日期排序</button>
+        <button onclick="importBudgetToItin()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--paper);color:var(--muted);border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">💰 從記帳匯入</button>
         <span style="font-size:11px;color:var(--muted)">從景點庫點「📅 加入行程」排入各天</span>
       </div>
       <div id="itineraryList"></div>
@@ -2412,7 +2413,60 @@ async function removeDiaryPhoto(dayId, idx) {
   queueItinSave(dayId);
 }
 
-// Suggest adding store to itinerary after budget save
+// Import budget store names into itinerary by date
+async function importBudgetToItin() {
+  if (!budgetItems.length) { alert('沒有記帳資料'); return; }
+  if (!days.length) { alert('請先建立行程天數'); return; }
+
+  let added = 0;
+  const region = (currentTrip?.regions||[])[0] || '';
+
+  for (const item of budgetItems) {
+    if (!item.date || !item.note) continue;
+    const firstLine = item.note.split('\n')[0].trim();
+    if (!firstLine || firstLine.length < 2) continue;
+
+    // Find matching day
+    const day = days.find(d => d.date === item.date);
+    if (!day) continue;
+
+    // Skip if already exists in entries
+    const alreadyIn = (day.entries||[]).some(e =>
+      e.type === 'place' && e.name === firstLine
+    );
+    if (alreadyIn) continue;
+
+    // Add entry with Maps URL
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstLine + (region ? ' ' + region : ''))}`;
+    if (!day.entries) day.entries = [];
+
+    // Insert by time: budget items don't have time, put at end
+    day.entries.push({ type:'place', name:firstLine, memo:'', url:mapsUrl });
+    added++;
+  }
+
+  if (!added) { alert('沒有新的店家可以匯入（已存在或沒有對應日期）'); return; }
+
+  // Sort entries: spots/places without time go after transport with time
+  // Then save all modified days
+  renderItinerary();
+  showSync('⟳ 儲存中...', 'var(--muted)');
+  const modifiedDays = days.filter(d =>
+    budgetItems.some(b => b.date === d.date && b.note)
+  );
+  for (const day of modifiedDays) {
+    const row = itinRowMap[day.id];
+    if (row) {
+      isSavingItin = true;
+      try { await gsUpdate(currentTrip.id+'_itinerary', row, itinToRow(day)); }
+      catch(e) { console.error(e); }
+      finally { isSavingItin = false; }
+    }
+  }
+  saveCache('jp2_itin_'+currentTrip.id, days, {rowMap:itinRowMap});
+  showSync(`✅ 已匯入 ${added} 個地點`, 'var(--sage)');
+  alert(`已匯入 ${added} 個地點到行程！`);
+}
 let pendingStoreEntry = null;
 
 function suggestAddToItinerary(budgetItem) {
