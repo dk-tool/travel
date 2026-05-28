@@ -897,6 +897,7 @@ textarea{resize:vertical;min-height:60px;}
 // CONFIG
 // ══════════════════════════════════════════
 const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzqdtEWwO0Stk3F0DUfRXPvIlj1edAyH9adxJQniBx6E31OE4k_iZtMH91FpVjfWTtd/exec';
+const APP_VERSION = 'v1.0.0 (2026-05-30)';
 const GEMINI_KEY  = 'AIzaSyDQT8Qe0Csr9tj7bGrqAMKxwEyV5Ubd0Yw';
 const GEMINI_URL  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
 
@@ -3466,6 +3467,8 @@ async function loadSettings() {
 // 2. 背景同步
 loadSettings(); // 先載設定
 loadTrips();
+document.getElementById("appVersion").textContent = APP_VERSION;
 </script>
+  <div style="position:fixed;bottom:6px;right:8px;font-size:9px;color:var(--border);pointer-events:none;z-index:1" id="appVersion"></div>
 </body>
 </html>
