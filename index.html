@@ -533,8 +533,11 @@ textarea{resize:vertical;min-height:60px;}
           </div>
         </div>
         <div class="form-group">
-          <label>日期</label>
-          <input type="date" id="bud-date">
+          <label>日期 & 時間</label>
+          <div style="display:flex;gap:8px">
+            <input type="date" id="bud-date" style="flex:2">
+            <input type="time" id="bud-time" style="flex:1;font-size:13px">
+          </div>
         </div>
         <div class="form-group">
           <label>備註</label>
@@ -1575,7 +1578,7 @@ function renderRegionChips(){
 // ══════════════════════════════════════════
 // BUDGET
 // ══════════════════════════════════════════
-const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt'];
+const BUDGET_COLS = ['id','amount','currency','category','region','date','time','note','payer','createdAt'];
 let budgetItems=[], budgetRowMap={}, budgetFilter='all';
 let editBudgetId=null;
 // Default rates as fallback (1 TWD = X 幣別)
@@ -1694,6 +1697,7 @@ async function addBudgetItem(){
   if(!amount){alert('請填寫金額');return;}
   const currency=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
   const date=document.getElementById('bud-date').value||new Date().toISOString().slice(0,10);
+  const time=document.getElementById('bud-time')?.value||'';
   const note=document.getElementById('bud-note').value.trim();
 
   // Duplicate check: same date + same amount + same currency
@@ -1710,7 +1714,7 @@ async function addBudgetItem(){
     id:Date.now(),amount,currency,
     category:document.getElementById('bud-cat').value,
     region:document.getElementById('bud-region').value,
-    date, note,
+    date, time, note,
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW')
   };
@@ -1805,6 +1809,7 @@ function clearBudgetForm(){
   document.getElementById('bud-region').value='';
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('bud-note').value='';
+  document.getElementById('bud-time').value='';
   document.getElementById('bud-payer').value='';
   document.getElementById('bud-payer-custom').value='';
   document.getElementById('twdPreview').textContent='';
@@ -2024,6 +2029,7 @@ async function handleReceiptScan(event) {
     const cat = result.category || '';
     if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
     if (result.date) document.getElementById('bud-date').value = result.date;
+      if (result.time) document.getElementById('bud-time').value = result.time;
     if (result.note) document.getElementById('bud-note').value = result.note.replace(/\\n/g,'\n');
     updateTWDPreview();
     statusEl.textContent = '✅ 已填入表單，請確認後新增';
@@ -2439,16 +2445,31 @@ async function importBudgetToItin() {
     // Add entry with Maps URL
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstLine + (region ? ' ' + region : ''))}`;
     if (!day.entries) day.entries = [];
-
-    // Insert by time: budget items don't have time, put at end
-    day.entries.push({ type:'place', name:firstLine, memo:'', url:mapsUrl });
+    day.entries.push({
+      type:'place', name:firstLine,
+      memo: item.time ? `🕐 ${item.time}` : '',
+      url: mapsUrl,
+      _time: item.time || ''
+    });
     added++;
   }
 
   if (!added) { alert('沒有新的店家可以匯入（已存在或沒有對應日期）'); return; }
 
-  // Sort entries: spots/places without time go after transport with time
-  // Then save all modified days
+  // Sort each modified day's entries by time
+  days.forEach(day => {
+    if (!day.entries) return;
+    day.entries.sort((a, b) => {
+      const ta = a.time || a._time || '';
+      const tb = b.time || b._time || '';
+      if (!ta && !tb) return 0;
+      if (!ta) return 1;
+      if (!tb) return -1;
+      return ta.localeCompare(tb);
+    });
+    day.entries.forEach(e => delete e._time);
+  });
+
   renderItinerary();
   showSync('⟳ 儲存中...', 'var(--muted)');
   const modifiedDays = days.filter(d =>
@@ -2485,12 +2506,13 @@ function suggestAddToItinerary(budgetItem) {
   pendingStoreEntry = {
     type: 'place',
     name: firstLine,
-    memo: '',
-    url: mapsUrl
+    memo: budgetItem.time ? `🕐 ${budgetItem.time}` : '',
+    url: mapsUrl,
+    _time: budgetItem.time || ''
   };
 
   // Fill modal
-  document.getElementById('storeItinMsg').textContent = `偵測到店家「${firstLine}」，要加入 ${budgetItem.date} 的行程嗎？`;
+  document.getElementById('storeItinMsg').textContent = `偵測到「${firstLine}」${budgetItem.time ? ' (' + budgetItem.time + ')' : ''}，要加入 ${budgetItem.date} 的行程嗎？`;
 
   // Fill day selector
   const sel = document.getElementById('storeItinDay');
@@ -2507,7 +2529,18 @@ async function confirmAddStoreToItin() {
   const day = days.find(d => d.id === dayId);
   if (!day) return;
   if (!day.entries) day.entries = [];
-  day.entries.push(pendingStoreEntry);
+  // Remove internal _time before pushing
+  const { _time, ...entry } = pendingStoreEntry;
+  day.entries.push(entry);
+  // Sort entries: transport with time first by time, places after
+  day.entries.sort((a, b) => {
+    const ta = a.time || (a._time) || '';
+    const tb = b.time || (b._time) || '';
+    if (!ta && !tb) return 0;
+    if (!ta) return 1;
+    if (!tb) return -1;
+    return ta.localeCompare(tb);
+  });
   closeModal('storeItinBackdrop');
   showSync('⟳ 加入行程...', 'var(--muted)');
   queueItinSave(dayId);
@@ -3587,8 +3620,7 @@ async function loadSettings() {
 // 2. 背景同步
 loadSettings(); // 先載設定
 loadTrips();
-</script>
+document.getElementById("appVersion").textContent = APP_VERSION;</script>
 <div style="position:fixed;bottom:6px;right:8px;font-size:9px;color:var(--muted);pointer-events:none;z-index:999;opacity:0.6" id="appVersion"></div>
-<script>document.getElementById("appVersion").textContent = APP_VERSION;</script>
 </body>
 </html>
