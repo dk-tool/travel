@@ -1576,7 +1576,7 @@ function renderRegionChips(){
 // ══════════════════════════════════════════
 // BUDGET
 // ══════════════════════════════════════════
-const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt'];
+const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt','time'];
 let budgetItems=[], budgetRowMap={}, budgetFilter='all';
 let editBudgetId=null;
 // Default rates as fallback (1 TWD = X 幣別)
@@ -1587,11 +1587,14 @@ const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','
 function budgetToRow(item){return BUDGET_COLS.map(k=>item[k]??'');}
 function rowToBudget(row){
   const i = {};
-  BUDGET_COLS.forEach((k,n) => {
+  // Old format has 9 cols (no time), new has 10 cols (time is last)
+  const oldCols = ['id','amount','currency','category','region','date','note','payer','createdAt'];
+  const cols = row.length <= 9 ? oldCols : BUDGET_COLS;
+  cols.forEach((k,n) => {
     if (k==='id') i[k] = parseInt(row[n])||0;
     else i[k] = row[n]||'';
   });
-  i.time = '';
+  if (!i.time) i.time = '';
   return i;
 }
 
@@ -1703,6 +1706,7 @@ async function addBudgetItem(){
   if(!amount){alert('請填寫金額');return;}
   const currency=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
   const date=document.getElementById('bud-date').value||new Date().toISOString().slice(0,10);
+  const time=document.getElementById('bud-time')?.value||'';
   const note=document.getElementById('bud-note').value.trim();
 
   // Duplicate check: same date + same amount + same currency
@@ -1719,7 +1723,7 @@ async function addBudgetItem(){
     id:Date.now(),amount,currency,
     category:document.getElementById('bud-cat').value,
     region:document.getElementById('bud-region').value,
-    date, note,
+    date, time, note,
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW')
   };
@@ -1761,6 +1765,7 @@ function openEditBudget(id){
   document.getElementById('eb-cat').value=item.category||'餐飲';
   document.getElementById('eb-region').value=item.region||'';
   document.getElementById('eb-date').value=item.date||'';
+  const ebt=document.getElementById('eb-time');if(ebt)ebt.value=item.time||'';
   document.getElementById('eb-note').value=item.note||'';
   const stdPayers = [...(settings.payers||[])];
   const ebPayer = document.getElementById('eb-payer');
@@ -1782,6 +1787,7 @@ async function saveBudgetEdit(){
   item.category=document.getElementById('eb-cat').value;
   item.region=document.getElementById('eb-region').value;
   item.date=document.getElementById('eb-date').value;
+  item.time=document.getElementById('eb-time')?.value||'';
   item.note=document.getElementById('eb-note').value.trim();
   item.payer=document.getElementById('eb-payer-custom').value.trim()||document.getElementById('eb-payer').value||'';
   closeModal('editBudgetBackdrop');renderBudget();
@@ -1824,6 +1830,7 @@ function clearBudgetForm(){
   document.getElementById('bud-cat').value='餐飲';
   document.getElementById('bud-region').value='';
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
+  const bt=document.getElementById('bud-time');if(bt)bt.value='';
   document.getElementById('bud-note').value='';
   document.getElementById('bud-payer').value='';
   document.getElementById('bud-payer-custom').value='';
@@ -2045,6 +2052,7 @@ async function handleReceiptScan(event) {
     const cat = result.category || '';
     if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
     if (result.date) document.getElementById('bud-date').value = result.date;
+      if (result.time) { const bt2=document.getElementById('bud-time');if(bt2)bt2.value=result.time; }
     if (result.time) document.getElementById('bud-time').value = result.time;
     const note = result.note ? result.note.replace(/\\n/g,'\n') : '';
     document.getElementById('bud-note').value = note;
