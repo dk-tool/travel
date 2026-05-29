@@ -2593,35 +2593,67 @@ let pendingStoreEntry = null;
 
 function suggestAddToItinerary(budgetItem) {
   if (!days.length) return;
-  // Extract store name: first line of note before \n
+  // Extract store name: first line of note
   const firstLine = (budgetItem.note||'').split('\n')[0].trim();
   if (!firstLine || firstLine.length < 2) return;
 
   // Find matching day by date
   const matchDay = days.find(d => d.date === budgetItem.date);
-  if (!matchDay) return; // Only suggest if there's a matching day
+  if (!matchDay) return;
 
   const region = budgetItem.region || (currentTrip?.regions||[])[0] || '';
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(firstLine + (region ? ' ' + region : ''))}`;
+  const time = budgetItem.time || '';
 
-  pendingStoreEntry = {
-    type: 'place',
-    name: firstLine,
-    memo: budgetItem.time ? `🕐 ${budgetItem.time}` : '',
-    url: mapsUrl,
-    _time: budgetItem.time || ''
-  };
+  // Build entry based on category
+  let entry;
+  if (budgetItem.category === '交通') {
+    const arrowMatch = (budgetItem.note||'').match(/(.+?)\s*[→→]\s*(.+?)(?:\n|$)/);
+    entry = {
+      type: 'transport',
+      from: arrowMatch ? arrowMatch[1].trim() : firstLine,
+      to: arrowMatch ? arrowMatch[2].trim() : '',
+      mode: '🚅 電車',
+      time,
+      fare: `¥${budgetItem.amount}`,
+      note: ''
+    };
+  } else {
+    entry = {
+      type: 'place',
+      name: firstLine,
+      memo: time ? `🕐 ${time}` : '',
+      url: mapsUrl
+    };
+  }
 
-  // Fill modal
-  document.getElementById('storeItinMsg').textContent = `偵測到「${firstLine}」${budgetItem.time ? ' (' + budgetItem.time + ')' : ''}，要加入 ${budgetItem.date} 的行程嗎？`;
+  if (time) {
+    // Has time → auto insert at correct position silently
+    insertEntryByTime(matchDay, entry, time);
+    showSync(`✅ 已加入行程 ${time}`, 'var(--sage)');
+  } else {
+    // No time → ask user
+    pendingStoreEntry = { ...entry, _dayId: matchDay.id };
+    document.getElementById('storeItinMsg').textContent = `偵測到「${firstLine}」，要加入 ${budgetItem.date} 的行程嗎？`;
+    const sel = document.getElementById('storeItinDay');
+    sel.innerHTML = days.map(d =>
+      `<option value="${d.id}" ${d.id === matchDay.id ? 'selected' : ''}>${d.label}${d.date ? ' ' + d.date : ''}</option>`
+    ).join('');
+    document.getElementById('storeItinBackdrop').classList.add('open');
+  }
+}
 
-  // Fill day selector
-  const sel = document.getElementById('storeItinDay');
-  sel.innerHTML = days.map(d =>
-    `<option value="${d.id}" ${d.id === matchDay.id ? 'selected' : ''}>${d.label}${d.date ? ' ' + d.date : ''}</option>`
-  ).join('');
-
-  document.getElementById('storeItinBackdrop').classList.add('open');
+function insertEntryByTime(day, entry, time) {
+  if (!day.entries) day.entries = [];
+  // Find correct position by time
+  let insertIdx = day.entries.length;
+  for (let i = 0; i < day.entries.length; i++) {
+    const t = day.entries[i].time || '';
+    if (t && t > time) { insertIdx = i; break; }
+  }
+  day.entries.splice(insertIdx, 0, entry);
+  renderItinerary();
+  queueItinSave(day.id);
 }
 
 async function confirmAddStoreToItin() {
@@ -2630,20 +2662,10 @@ async function confirmAddStoreToItin() {
   const day = days.find(d => d.id === dayId);
   if (!day) return;
   if (!day.entries) day.entries = [];
-  // Remove internal _time before pushing
-  const { _time, ...entry } = pendingStoreEntry;
+  const { _dayId, ...entry } = pendingStoreEntry;
   day.entries.push(entry);
-  // Sort entries: transport with time first by time, places after
-  day.entries.sort((a, b) => {
-    const ta = a.time || (a._time) || '';
-    const tb = b.time || (b._time) || '';
-    if (!ta && !tb) return 0;
-    if (!ta) return 1;
-    if (!tb) return -1;
-    return ta.localeCompare(tb);
-  });
   closeModal('storeItinBackdrop');
-  showSync('⟳ 加入行程...', 'var(--muted)');
+  renderItinerary();
   queueItinSave(dayId);
   showSync('✅ 已加入行程', 'var(--sage)');
   pendingStoreEntry = null;
