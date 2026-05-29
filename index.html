@@ -1237,6 +1237,12 @@ async function saveEditTrip() {
     if (sheetRow > 0) await gsUpdate(TRIPS_SHEET, sheetRow, tripToRow(trip));
     saveCache(CK_TRIPS, trips);
     renderTripList();
+    // If editing current trip, apply currency immediately
+    if (currentTrip && currentTrip.id === editingTripId) {
+      currentTrip.currency = trip.currency;
+      const bc = document.getElementById('bud-currency');
+      if (bc) bc.value = trip.currency;
+    }
     showSync('✅ 已儲存', 'var(--sage)');
   } catch(e) {
     showSync('❌ ' + e.message, 'var(--red)');
@@ -1837,7 +1843,7 @@ function updateEditTWDPreview(){
 
 function syncCustomCurrency(){
   const v=document.getElementById('bud-currency-custom').value.trim();
-  if(v)document.getElementById('bud-currency').value='JPY';
+  if(v)document.getElementById('bud-currency').value=currentTrip?.currency||'JPY';
   updateTWDPreview();
 }
 function syncEditCustomCurrency(){
@@ -2010,7 +2016,7 @@ function setBudgetFilter(f){
 
 function clearBudgetForm(){
   document.getElementById('bud-amount').value='';
-  document.getElementById('bud-currency').value='JPY';
+  document.getElementById('bud-currency').value=currentTrip?.currency||'JPY';
   document.getElementById('bud-currency-custom').value='';
   document.getElementById('bud-cat').value='餐飲';
   document.getElementById('bud-region').value='';
