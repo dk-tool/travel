@@ -918,11 +918,40 @@ textarea{resize:vertical;min-height:60px;}
     <div class="form-group"><label id="trip-date-label">旅遊日期</label><input type="text" id="trip-date" placeholder="e.g. 2026/05/20 ~ 05/25"></div>
     <div class="form-group">
       <label id="trip-region-label">地點（輸入後按加入）</label>
+      <!-- Country presets -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="countryPresets">
+        <span style="font-size:11px;color:var(--muted);width:100%;margin-bottom:2px">快速選擇：</span>
+        <button type="button" onclick="applyCountryPreset('日本','🗾','JPY')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🗾 日本</button>
+        <button type="button" onclick="applyCountryPreset('韓國','🇰🇷','KRW')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇰🇷 韓國</button>
+        <button type="button" onclick="applyCountryPreset('台灣','🇹🇼','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇹🇼 台灣</button>
+        <button type="button" onclick="applyCountryPreset('泰國','🇹🇭','THB')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇹🇭 泰國</button>
+        <button type="button" onclick="applyCountryPreset('美國','🇺🇸','USD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇺🇸 美國</button>
+        <button type="button" onclick="applyCountryPreset('歐洲','🇪🇺','EUR')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇪🇺 歐洲</button>
+        <button type="button" onclick="applyCountryPreset('香港','🇭🇰','HKD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇭🇰 香港</button>
+        <button type="button" onclick="applyCountryPreset('中國','🇨🇳','CNY')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇨🇳 中國</button>
+      </div>
       <div style="display:flex;gap:8px">
         <input type="text" id="trip-region-input" placeholder="e.g. 岡山" style="flex:1" onkeydown="if(event.key==='Enter'){addRegionChip();event.preventDefault()}">
         <button class="btn btn-secondary" style="width:60px;margin-top:0;padding:0;flex-shrink:0" onclick="addRegionChip()">加入</button>
       </div>
       <div class="chips-wrap" id="newTripRegions"></div>
+    </div>
+    <!-- Default currency -->
+    <div class="form-group">
+      <label>預設幣值</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="trip-currency" style="flex:1;font-size:13px">
+          <option value="JPY">🇯🇵 JPY 日圓</option>
+          <option value="KRW">🇰🇷 KRW 韓圜</option>
+          <option value="TWD">🇹🇼 TWD 台幣</option>
+          <option value="THB">🇹🇭 THB 泰銖</option>
+          <option value="USD">🇺🇸 USD 美元</option>
+          <option value="EUR">🇪🇺 EUR 歐元</option>
+          <option value="HKD">🇭🇰 HKD 港幣</option>
+          <option value="CNY">🇨🇳 CNY 人民幣</option>
+        </select>
+        <span id="trip-currency-hint" style="font-size:11px;color:var(--muted)">進入記帳會自動帶入</span>
+      </div>
     </div>
     <div class="form-group">
       <label>圖示</label>
@@ -1023,8 +1052,8 @@ function fmtDate(str) {
   }
   return str.slice(0,10); // already YYYY-MM-DD or zh-TW format
 }
-function tripToRow(t){return[t.id,t.name,t.date||'',t.icon||'🗾',JSON.stringify(t.regions||[]),t.mode||'travel'];}
-function rowToTrip(r){return{id:r[0],name:r[1]||'',date:r[2]||'',icon:r[3]||'🗾',regions:safeJSON(r[4],[]),mode:r[5]||'travel'};}
+function tripToRow(t){return[t.id,t.name,t.date||'',t.icon||'🗾',JSON.stringify(t.regions||[]),t.mode||'travel',t.currency||'JPY'];}
+function rowToTrip(r){return{id:r[0],name:r[1]||'',date:r[2]||'',icon:r[3]||'🗾',regions:safeJSON(r[4],[]),mode:r[5]||'travel',currency:r[6]||'JPY'};}
 function shopToRow(item){return SHOP_COLS.map(k=>{if(k==='links'||k==='photos')return JSON.stringify(item[k]||[]);if(k==='purchased')return item.purchased?'1':'0';return item[k]??'';});}
 function rowToShop(row){const i={};SHOP_COLS.forEach((k,n)=>{if(k==='links'||k==='photos')i[k]=safeJSON(row[n],[]);else if(k==='purchased')i[k]=row[n]==='1';else if(k==='id')i[k]=parseInt(row[n])||0;else i[k]=row[n]||'';});return i;}
 function spotToRow(item){return SPOT_COLS.map(k=>{if(k==='links')return JSON.stringify(item.links||[]);if(k==='visited')return item.visited?'1':'0';if(k==='extra')return JSON.stringify({rating:item.rating||0,review:item.review||'',photos:item.photos||[]});return item[k]??'';});}
@@ -1094,7 +1123,8 @@ async function saveNewTrip(){
   if(isBusy)return;
   const name=document.getElementById('trip-name').value.trim();
   if(!name){alert('請輸入旅程名稱');return;}
-  const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions],mode:currentTripMode};
+  const currency=document.getElementById('trip-currency')?.value||'JPY';
+  const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions],mode:currentTripMode,currency};
   setBusy(true,'saveTripBtn');showSync('⟳ 建立...','var(--muted)');
   try{
     await gsAppend(TRIPS_SHEET,tripToRow(trip));
@@ -1108,6 +1138,14 @@ async function saveNewTrip(){
     await selectTrip(trip.id); // 直接跳入旅程
   }catch(e){showSync('❌ '+e.message,'var(--red)');alert('建立失敗：'+e.message);}
   setBusy(false,'saveTripBtn');
+}
+
+function applyCountryPreset(region, icon, currency) {
+  document.getElementById('trip-icon').value = icon;
+  const cur = document.getElementById('trip-currency');
+  if (cur) cur.value = currency;
+  const input = document.getElementById('trip-region-input');
+  if (input) { input.value = region; addRegionChip(); }
 }
 
 async function deleteTrip(id){
@@ -1144,6 +1182,11 @@ async function selectTrip(id){
   applyModeToUI(currentTrip); // apply travel/life mode UI
   loadRates();
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
+  // Apply trip default currency to budget form
+  if (currentTrip.currency) {
+    const bc = document.getElementById('bud-currency');
+    if (bc) bc.value = currentTrip.currency;
+  }
 
   // 先清空狀態避免殘留舊資料
   shopItems=[]; shopRowMap={};
