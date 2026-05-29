@@ -906,16 +906,24 @@ textarea{resize:vertical;min-height:60px;}
     </div>
     <div class="form-group">
       <label>預設幣值</label>
-      <select id="et-currency" style="width:100%;font-size:13px">
-        <option value="JPY">🇯🇵 JPY 日圓</option>
-        <option value="KRW">🇰🇷 KRW 韓圜</option>
-        <option value="TWD">🇹🇼 TWD 台幣</option>
-        <option value="THB">🇹🇭 THB 泰銖</option>
-        <option value="USD">🇺🇸 USD 美元</option>
-        <option value="EUR">🇪🇺 EUR 歐元</option>
-        <option value="HKD">🇭🇰 HKD 港幣</option>
-        <option value="CNY">🇨🇳 CNY 人民幣</option>
-      </select>
+      <div style="display:flex;gap:8px">
+        <select id="et-currency" style="flex:2;font-size:13px" onchange="toggleTripCurrencyCustom('et')">
+          <option value="JPY">🇯🇵 JPY 日圓</option>
+          <option value="KRW">🇰🇷 KRW 韓圜</option>
+          <option value="TWD">🇹🇼 TWD 台幣</option>
+          <option value="THB">🇹🇭 THB 泰銖</option>
+          <option value="USD">🇺🇸 USD 美元</option>
+          <option value="EUR">🇪🇺 EUR 歐元</option>
+          <option value="HKD">🇭🇰 HKD 港幣</option>
+          <option value="CNY">🇨🇳 CNY 人民幣</option>
+          <option value="SGD">🇸🇬 SGD 新幣</option>
+          <option value="MYR">🇲🇾 MYR 馬幣</option>
+          <option value="GBP">🇬🇧 GBP 英鎊</option>
+          <option value="AUD">🇦🇺 AUD 澳幣</option>
+          <option value="custom">✏️ 自訂...</option>
+        </select>
+        <input type="text" id="et-currency-custom" placeholder="e.g. VND" style="display:none;flex:1;font-size:13px;text-transform:uppercase" maxlength="5">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('editTripBackdrop')">取消</button>
@@ -983,7 +991,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="form-group">
       <label>預設幣值</label>
       <div style="display:flex;gap:8px;align-items:center">
-        <select id="trip-currency" style="flex:1;font-size:13px">
+        <select id="trip-currency" style="flex:2;font-size:13px" onchange="toggleTripCurrencyCustom('trip')">
           <option value="JPY">🇯🇵 JPY 日圓</option>
           <option value="KRW">🇰🇷 KRW 韓圜</option>
           <option value="TWD">🇹🇼 TWD 台幣</option>
@@ -992,8 +1000,13 @@ textarea{resize:vertical;min-height:60px;}
           <option value="EUR">🇪🇺 EUR 歐元</option>
           <option value="HKD">🇭🇰 HKD 港幣</option>
           <option value="CNY">🇨🇳 CNY 人民幣</option>
+          <option value="SGD">🇸🇬 SGD 新幣</option>
+          <option value="MYR">🇲🇾 MYR 馬幣</option>
+          <option value="GBP">🇬🇧 GBP 英鎊</option>
+          <option value="AUD">🇦🇺 AUD 澳幣</option>
+          <option value="custom">✏️ 自訂...</option>
         </select>
-        <span id="trip-currency-hint" style="font-size:11px;color:var(--muted)">進入記帳會自動帶入</span>
+        <input type="text" id="trip-currency-custom" placeholder="e.g. VND" style="display:none;flex:1;font-size:13px;text-transform:uppercase" maxlength="5">
       </div>
     </div>
     <div class="form-group">
@@ -1173,7 +1186,7 @@ async function saveNewTrip(){
   if(isBusy)return;
   const name=document.getElementById('trip-name').value.trim();
   if(!name){alert('請輸入旅程名稱');return;}
-  const currency=document.getElementById('trip-currency')?.value||'JPY';
+  const currency=getTripCurrency('trip');
   const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions],mode:currentTripMode,currency};
   setBusy(true,'saveTripBtn');showSync('⟳ 建立...','var(--muted)');
   try{
@@ -1188,6 +1201,24 @@ async function saveNewTrip(){
     await selectTrip(trip.id); // 直接跳入旅程
   }catch(e){showSync('❌ '+e.message,'var(--red)');alert('建立失敗：'+e.message);}
   setBusy(false,'saveTripBtn');
+}
+
+function toggleTripCurrencyCustom(prefix) {
+  const sel = document.getElementById(prefix+'-currency');
+  const inp = document.getElementById(prefix+'-currency-custom');
+  if (!sel || !inp) return;
+  inp.style.display = sel.value === 'custom' ? '' : 'none';
+  if (sel.value === 'custom') inp.focus();
+}
+
+function getTripCurrency(prefix) {
+  const sel = document.getElementById(prefix+'-currency');
+  if (!sel) return 'JPY';
+  if (sel.value === 'custom') {
+    const inp = document.getElementById(prefix+'-currency-custom');
+    return (inp?.value?.trim()?.toUpperCase()) || 'JPY';
+  }
+  return sel.value;
 }
 
 function applyCountryPreset(region, icon, currency) {
@@ -1215,8 +1246,19 @@ function openEditTripModal(id) {
   document.getElementById('et-name').value = trip.name || '';
   document.getElementById('et-date').value = trip.date || '';
   document.getElementById('et-icon').value = trip.icon || '🗾';
+  const knownCurs = ['JPY','KRW','TWD','THB','USD','EUR','HKD','CNY','SGD','MYR','GBP','AUD'];
+  const tripCur = trip.currency || (trip.mode === 'life' ? 'TWD' : 'JPY');
   const cur = document.getElementById('et-currency');
-  if (cur) cur.value = trip.currency || (trip.mode === 'life' ? 'TWD' : 'JPY');
+  const curCustom = document.getElementById('et-currency-custom');
+  if (cur) {
+    if (knownCurs.includes(tripCur)) {
+      cur.value = tripCur;
+      if (curCustom) curCustom.style.display = 'none';
+    } else {
+      cur.value = 'custom';
+      if (curCustom) { curCustom.value = tripCur; curCustom.style.display = ''; }
+    }
+  }
   document.getElementById('editTripBackdrop').classList.add('open');
 }
 
@@ -1228,7 +1270,7 @@ async function saveEditTrip() {
   trip.name = name;
   trip.date = document.getElementById('et-date').value.trim();
   trip.icon = document.getElementById('et-icon').value.trim() || '🗾';
-  trip.currency = document.getElementById('et-currency').value;
+  trip.currency = getTripCurrency('et');
   closeModal('editTripBackdrop');
   showSync('⟳ 儲存...', 'var(--muted)');
   try {
