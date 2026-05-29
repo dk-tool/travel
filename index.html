@@ -1293,7 +1293,8 @@ async function saveEditTrip() {
 }
 
 async function deleteTrip(id){
-  if(!confirm(`刪除旅程「${t?.name}」？\n所有購物和景點記錄也會刪除。`))return;
+  const t = trips.find(x=>x.id===id);
+  if(!confirm(`刪除「${t?.name}」？\n所有記帳、景點、行程資料也會刪除。`))return;
   if(isBusy)return;setBusy(true);showSync('⟳ 刪除...','var(--muted)');
   try{
     const rows=await gsGet(TRIPS_SHEET);
