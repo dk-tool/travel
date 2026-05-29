@@ -918,17 +918,29 @@ textarea{resize:vertical;min-height:60px;}
     <div class="form-group"><label id="trip-date-label">旅遊日期</label><input type="text" id="trip-date" placeholder="e.g. 2026/05/20 ~ 05/25"></div>
     <div class="form-group">
       <label id="trip-region-label">地點（輸入後按加入）</label>
-      <!-- Country presets -->
+      <!-- Country presets - shown based on mode -->
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="countryPresets">
         <span style="font-size:11px;color:var(--muted);width:100%;margin-bottom:2px">快速選擇：</span>
-        <button type="button" onclick="applyCountryPreset('日本','🗾','JPY')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🗾 日本</button>
-        <button type="button" onclick="applyCountryPreset('韓國','🇰🇷','KRW')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇰🇷 韓國</button>
-        <button type="button" onclick="applyCountryPreset('台灣','🇹🇼','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇹🇼 台灣</button>
-        <button type="button" onclick="applyCountryPreset('泰國','🇹🇭','THB')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇹🇭 泰國</button>
-        <button type="button" onclick="applyCountryPreset('美國','🇺🇸','USD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇺🇸 美國</button>
-        <button type="button" onclick="applyCountryPreset('歐洲','🇪🇺','EUR')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇪🇺 歐洲</button>
-        <button type="button" onclick="applyCountryPreset('香港','🇭🇰','HKD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇭🇰 香港</button>
-        <button type="button" onclick="applyCountryPreset('中國','🇨🇳','CNY')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇨🇳 中國</button>
+        <!-- Travel presets -->
+        <span id="travelPresets">
+          <button type="button" onclick="applyCountryPreset('日本','🗾','JPY')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🗾 日本</button>
+          <button type="button" onclick="applyCountryPreset('韓國','🇰🇷','KRW')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇰🇷 韓國</button>
+          <button type="button" onclick="applyCountryPreset('台灣','🇹🇼','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇹🇼 台灣</button>
+          <button type="button" onclick="applyCountryPreset('泰國','🇹🇭','THB')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇹🇭 泰國</button>
+          <button type="button" onclick="applyCountryPreset('美國','🇺🇸','USD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇺🇸 美國</button>
+          <button type="button" onclick="applyCountryPreset('歐洲','🇪🇺','EUR')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇪🇺 歐洲</button>
+          <button type="button" onclick="applyCountryPreset('香港','🇭🇰','HKD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇭🇰 香港</button>
+          <button type="button" onclick="applyCountryPreset('中國','🇨🇳','CNY')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🇨🇳 中國</button>
+        </span>
+        <!-- Life presets -->
+        <span id="lifePresets" style="display:none">
+          <button type="button" onclick="applyLifePreset('日常生活','🏠','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🏠 日常生活</button>
+          <button type="button" onclick="applyLifePreset('工作','💼','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">💼 工作</button>
+          <button type="button" onclick="applyLifePreset('採購清單','🛒','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">🛒 採購</button>
+          <button type="button" onclick="applyLifePreset('健身','💪','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">💪 健身</button>
+          <button type="button" onclick="applyLifePreset('學習','📚','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">📚 學習</button>
+          <button type="button" onclick="applyLifePreset('家庭','👨‍👩‍👧','TWD')" style="padding:4px 10px;border:1px solid var(--border);border-radius:16px;background:var(--paper);font-size:12px;cursor:pointer">👨‍👩‍👧 家庭</button>
+        </span>
       </div>
       <div style="display:flex;gap:8px">
         <input type="text" id="trip-region-input" placeholder="e.g. 岡山" style="flex:1" onkeydown="if(event.key==='Enter'){addRegionChip();event.preventDefault()}">
@@ -1146,6 +1158,14 @@ function applyCountryPreset(region, icon, currency) {
   if (cur) cur.value = currency;
   const input = document.getElementById('trip-region-input');
   if (input) { input.value = region; addRegionChip(); }
+}
+
+function applyLifePreset(name, icon, currency) {
+  document.getElementById('trip-icon').value = icon;
+  const cur = document.getElementById('trip-currency');
+  if (cur) cur.value = currency;
+  const nameEl = document.getElementById('trip-name');
+  if (nameEl && !nameEl.value) nameEl.value = name;
 }
 
 async function deleteTrip(id){
@@ -3435,8 +3455,14 @@ function selectTripMode(mode) {
   document.getElementById('trip-name').placeholder = cfg.namePlaceholder;
   document.getElementById('trip-icon').value = cfg.defaultIcon;
 
-  // Update emoji picker
-  const ep = document.getElementById('emojiPicker');
+  // Toggle country/life presets
+  const tp = document.getElementById('travelPresets');
+  const lp = document.getElementById('lifePresets');
+  if (tp) tp.style.display = isLife ? 'none' : '';
+  if (lp) lp.style.display = isLife ? '' : 'none';
+  // Default currency for life mode
+  const tripCur = document.getElementById('trip-currency');
+  if (tripCur && isLife) tripCur.value = 'TWD';
   ep.innerHTML = '';
   cfg.emojis.split(' ').forEach(e => {
     const s = document.createElement('span');
