@@ -1449,7 +1449,7 @@ function renderSpots(){
   const total=spotItems.length,done=spotItems.filter(i=>i.visited).length;
   document.getElementById('spotStatsBar').innerHTML=`<div class="stat-pill">共<strong>${total}</strong>個</div><div class="stat-pill">✅已去<strong>${done}</strong></div><div class="stat-pill">📍待去<strong>${total-done}</strong></div>`;
   const el=document.getElementById('spotList');
-  if(!f.length){el.innerHTML=`<div class="empty-state"><div class="emoji">📍</div><p>${spotItems.length?'沒有符合條件的景點':'還沒有景點，點「新增」開始記錄！'}</p></div>`;return;}
+  if(!f.length){el.innerHTML=`<div class="empty-state"><div class="emoji">📍</div><p>${spotItems.length?(currentTrip?.mode==='life' ? '沒有符合條件的地點' : '沒有符合條件的景點'):'還沒有景點，點「新增」開始記錄！'}</p></div>`;return;}
   el.innerHTML=f.map(item=>{
     const stars=item.priority?'⭐'.repeat(item.priority):'';
     const catCls=spotCatMap[item.category]||'cat-spot-other';
@@ -3429,21 +3429,68 @@ function applyModeToUI(trip) {
   const spotNameInput = document.getElementById('spot-name');
   if (spotNameInput) spotNameInput.placeholder = isLife ? '地點名稱' : '景點名稱';
 
-  // Update add spot form title and button
-  const addSpotTitle = document.querySelector('#panel-add-spot .form-title');
-  if (addSpotTitle) addSpotTitle.textContent = cfg.addSpot.title;
+  // Comprehensive UI text switching based on mode
+  const setText = (id, travel, life) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = isLife ? life : travel;
+  };
+  const setHTML = (id, travel, life) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = isLife ? life : travel;
+  };
+  const setPlaceholder = (id, travel, life) => {
+    const el = document.getElementById(id);
+    if (el) el.placeholder = isLife ? life : travel;
+  };
+  const setQueryText = (sel, travel, life) => {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = isLife ? life : travel;
+  };
+
+  // Spot panel filter buttons
+  setQueryText('#panel-spots .filter-btn[onclick*="已去"]', '已去', '已到');
+  
+  // Spot search placeholder
+  setPlaceholder('spot-search', '搜尋景點...', '搜尋地點...');
+
+  // Add spot form
+  setQueryText('#panel-add-spot .form-title', '📍 新增景點', '📌 新增地點');
+  setQueryText('#panel-add-spot label', '景點名稱 *', '地點名稱 *');
+  setPlaceholder('spot-name', '景點名稱', '地點名稱');
   const addSpotBtn = document.getElementById('addSpotBtn');
-  if (addSpotBtn) addSpotBtn.textContent = cfg.addSpot.btn;
+  if (addSpotBtn) addSpotBtn.textContent = isLife ? '＋ 新增地點' : '＋ 新增景點';
 
-  // Update add picker spot button
+  // Edit spot modal
+  setQueryText('#editSpotModal h3', '✏️ 編輯景點', '✏️ 編輯地點');
+
+  // Check-in modal
+  setQueryText('#checkinModal h3', '📸 打卡紀錄', '📸 到訪紀錄');
+
+  // Add to itinerary modal
+  setQueryText('#storeItinBackdrop h3', '📍 加入行程？', '📌 加入計劃？');
+  setQueryText('#spotItinBackdrop h3', '📅 加入行程', '📋 加入計劃');
+  const addDayBtns = document.querySelectorAll('#panel-itinerary button, #spotItinBackdrop button');
+  addDayBtns.forEach(btn => {
+    if (btn.textContent.includes('新增天數') || btn.textContent.includes('新增階段')) {
+      btn.textContent = isLife ? '＋ 新增階段' : '＋ 新增天數';
+    }
+  });
+
+  // Itinerary hint text
+  const itinHint = document.querySelector('#panel-itinerary span[style*="muted"]');
+  if (itinHint) itinHint.textContent = isLife ? '從地點庫點「📋 加入計劃」排入各階段' : '從景點庫點「📅 加入行程」排入各天';
+
+  // Add picker buttons
   const pickerSpot = document.querySelector('#panel-add .add-pick-btn:nth-child(2) .add-pick-label');
-  if (pickerSpot) pickerSpot.textContent = mode==='life' ? '新增待辦地點' : '新增景點';
+  if (pickerSpot) pickerSpot.textContent = isLife ? '新增待辦地點' : '新增景點';
   const pickerSpotSub = document.querySelector('#panel-add .add-pick-btn:nth-child(2) .add-pick-sub');
-  if (pickerSpotSub) pickerSpotSub.textContent = mode==='life' ? '記錄要去的店家、地點' : '記錄想去的地方、地圖連結';
+  if (pickerSpotSub) pickerSpotSub.textContent = isLife ? '記錄要去的店家、地點' : '記錄想去的地方、地圖連結';
 
-  // Update add plan button in itinerary
-  const addDayBtn = document.querySelector('#panel-itinerary button');
-  if (addDayBtn) addDayBtn.textContent = mode==='life' ? '＋ 新增階段' : '＋ 新增天數';
+  // Budget note placeholder
+  setPlaceholder('bud-note', 'e.g. 午餐 拉麵', 'e.g. 日常雜費 超市購物');
+
+  // Shop name placeholder  
+  setPlaceholder('shop-name', 'e.g. 岡山デニム', 'e.g. 商品名稱');
 
   // Update header sub if needed
   const sub = (trip.regions||[]).join('・') || cfg.tripLabel;
