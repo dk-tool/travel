@@ -239,7 +239,8 @@ textarea{resize:vertical;min-height:60px;}
 
 <div class="header-tape"></div>
 <header>
-  <div class="header-stamp"><span class="stamp-big">旅</span><span>紀錄</span></div>
+  <div id="backBtn" onclick="goToTrips()" style="display:none;cursor:pointer;padding:4px 8px;font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:6px;white-space:nowrap;flex-shrink:0;margin-right:6px">← 旅程</div>
+  <div class="header-stamp" id="headerStamp"><span class="stamp-big">旅</span><span>紀錄</span></div>
   <div class="header-text">
     <h1 id="headerTitle">🇯🇵 日本旅遊紀錄</h1>
     <p id="headerSub">選擇旅程開始記錄</p>
@@ -268,7 +269,6 @@ textarea{resize:vertical;min-height:60px;}
     <div class="tab" id="tab-btn-itinerary" onclick="switchTab('itinerary')">🗓 行程</div>
     <div class="tab" id="tab-btn-budget" onclick="switchTab('budget')">💰 記帳</div>
     <div class="tab" id="tab-btn-add" onclick="switchTab('add')">✏️ 新增</div>
-    <div class="tab tab-back" onclick="goToTrips()">← 旅程</div>
     <div class="tab" id="tab-btn-settings" onclick="switchTab('settings')" style="font-size:16px">⚙️</div>
   </div>
   <div class="main">
@@ -1202,6 +1202,8 @@ async function selectTrip(id){
   ['inp-region','es-region','ep-region','spot-region','bud-region','eb-region'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
   document.getElementById('screen-trips').classList.remove('active');
   document.getElementById('screen-shopping').classList.add('active');
+  document.getElementById('backBtn').style.display = '';
+  document.getElementById('headerStamp').style.display = 'none';
   switchTab('shopping');
   applyModeToUI(currentTrip); // apply travel/life mode UI
   loadRates();
@@ -1259,6 +1261,8 @@ function goToTrips(){
   localStorage.removeItem('jp2_lastTrip');
   document.getElementById('screen-shopping').classList.remove('active');
   document.getElementById('screen-trips').classList.add('active');
+  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('headerStamp').style.display = '';
   document.getElementById('headerTitle').textContent='🇯🇵 日本旅遊紀錄';
   document.getElementById('headerSub').textContent='選擇旅程開始記錄';
 }
