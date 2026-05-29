@@ -519,7 +519,7 @@ textarea{resize:vertical;min-height:60px;}
         <div class="form-row">
           <div class="form-group">
             <label>分類</label>
-            <select id="bud-cat">
+            <select id="bud-cat" onchange="toggleTransportFields()">
               <option value="餐飲">🍜 餐飲</option>
               <option value="交通">🚅 交通</option>
               <option value="住宿">🏨 住宿</option>
@@ -531,6 +531,30 @@ textarea{resize:vertical;min-height:60px;}
           <div class="form-group">
             <label>地區</label>
             <select id="bud-region"><option value="">不限</option></select>
+          </div>
+        </div>
+        <!-- Transport fields - shown when 交通 is selected -->
+        <div id="bud-transport-fields" style="display:none">
+          <div class="form-group">
+            <label>🚅 起點 → 終點</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="bud-from" placeholder="出發地" style="flex:1;font-size:13px">
+              <span style="color:var(--muted);flex-shrink:0">→</span>
+              <input type="text" id="bud-to" placeholder="目的地" style="flex:1;font-size:13px">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>交通方式</label>
+            <select id="bud-transport-mode" style="width:100%;font-size:13px">
+              <option value="🚅 電車">🚅 電車</option>
+              <option value="🚌 巴士">🚌 巴士</option>
+              <option value="🚶 步行">🚶 步行</option>
+              <option value="🚕 計程車">🚕 計程車</option>
+              <option value="🚗 自駕">🚗 自駕</option>
+              <option value="⛴ 渡輪">⛴ 渡輪</option>
+              <option value="🚡 纜車">🚡 纜車</option>
+              <option value="✈️ 飛機">✈️ 飛機</option>
+            </select>
           </div>
         </div>
         <div class="form-group">
@@ -1708,7 +1732,20 @@ async function addBudgetItem(){
   const currency=document.getElementById('bud-currency-custom').value.trim()||document.getElementById('bud-currency').value;
   const date=document.getElementById('bud-date').value||new Date().toISOString().slice(0,10);
   const time=document.getElementById('bud-time')?.value||'';
-  const note=document.getElementById('bud-note').value.trim();
+  const cat=document.getElementById('bud-cat').value;
+  const rawNote=document.getElementById('bud-note').value.trim();
+  // For transport, prepend from→to to note
+  let note = rawNote;
+  let transportMode = '';
+  if (cat === '交通') {
+    const from = document.getElementById('bud-from')?.value.trim()||'';
+    const to = document.getElementById('bud-to')?.value.trim()||'';
+    transportMode = document.getElementById('bud-transport-mode')?.value||'🚅 電車';
+    if (from || to) {
+      const route = [from, to].filter(Boolean).join('→');
+      note = route + (rawNote ? '\n'+rawNote : '');
+    }
+  }
 
   // Duplicate check: same date + same amount + same currency
   const duplicate = budgetItems.find(i =>
@@ -1722,11 +1759,12 @@ async function addBudgetItem(){
   }
   const item={
     id:Date.now(),amount,currency,
-    category:document.getElementById('bud-cat').value,
+    category:cat,
     region:document.getElementById('bud-region').value,
     date, time, note,
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
-    createdAt:new Date().toLocaleDateString('zh-TW')
+    createdAt:new Date().toLocaleDateString('zh-TW'),
+    _transportMode: transportMode
   };
   setBusy(true,'addBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
   try{
@@ -1818,8 +1856,13 @@ function filterByPayer(payer) {
   renderBudget();
 }
 
+function toggleTransportFields() {
+  const cat = document.getElementById('bud-cat')?.value;
+  const el = document.getElementById('bud-transport-fields');
+  if (el) el.style.display = cat === '交通' ? '' : 'none';
+}
+
 function setBudgetFilter(f){
-  budgetFilter=f;
   document.querySelectorAll('#panel-budget .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
   renderBudget();
 }
@@ -1833,6 +1876,9 @@ function clearBudgetForm(){
   document.getElementById('bud-date').value=new Date().toISOString().slice(0,10);
   const bt=document.getElementById('bud-time');if(bt)bt.value='';
   document.getElementById('bud-note').value='';
+  const bf=document.getElementById('bud-from');if(bf)bf.value='';
+  const bto=document.getElementById('bud-to');if(bto)bto.value='';
+  toggleTransportFields();
   document.getElementById('bud-payer').value='';
   document.getElementById('bud-payer-custom').value='';
   document.getElementById('twdPreview').textContent='';
@@ -2613,7 +2659,7 @@ function suggestAddToItinerary(budgetItem) {
       type: 'transport',
       from: arrowMatch ? arrowMatch[1].trim() : firstLine,
       to: arrowMatch ? arrowMatch[2].trim() : '',
-      mode: '🚅 電車',
+      mode: budgetItem._transportMode || '🚅 電車',
       time,
       fare: `¥${budgetItem.amount}`,
       note: ''
