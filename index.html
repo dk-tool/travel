@@ -489,7 +489,8 @@ textarea{resize:vertical;min-height:60px;}
             🖼 選相片
           </button>
         </div>
-        <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:16px;text-align:center"></div>
+        <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:6px;min-height:16px;text-align:center"></div>
+        <button id="retryBtn" onclick="retryReceiptScan()" style="display:none;width:100%;padding:8px;border:1px solid var(--gold);border-radius:6px;background:#fffbf0;font-size:12px;color:var(--gold);font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-bottom:8px">🔄 重新辨識同一張照片</button>
         <!-- Preview -->
         <div id="receiptPreview" style="display:none;margin-bottom:12px;text-align:center">
           <img id="receiptImg" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border)">
@@ -2021,6 +2022,12 @@ function openPhotoViewer(url) {
 // ══════════════════════════════════════════
 // RECEIPT SCAN (via Apps Script proxy)
 // ══════════════════════════════════════════
+function retryReceiptScan() {
+  if (!window._lastReceiptFile) { alert('請先拍照或選相片'); return; }
+  // Create a fake event to reuse handleReceiptScan
+  handleReceiptScan({ target: { files: [window._lastReceiptFile], value: '' } });
+}
+
 async function handleReceiptScan(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -2040,7 +2047,12 @@ async function handleReceiptScan(event) {
 
   let retryCount = 0;
   const maxRetries = 3;
-  const file2 = file; // keep reference
+  const file2 = file;
+  // Store for manual retry
+  window._lastReceiptFile = file;
+  // Show retry button
+  const retryBtn = document.getElementById('retryBtn');
+  if (retryBtn) retryBtn.style.display = 'block';
 
   const fillForm = (result) => {
     document.getElementById('bud-amount').value = result.amount;
