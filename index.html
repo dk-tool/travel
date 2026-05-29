@@ -2977,7 +2977,9 @@ async function _fetchItin(){
 // Add day
 async function addDay(){
   const n = days.length+1;
-  const d = { id:Date.now(), label:'Day '+n, date:'', note:'', entries:[] };
+  const isLife = currentTrip?.mode === 'life';
+  const label = isLife ? '階段 '+n : 'Day '+n;
+  const d = { id:Date.now(), label, date:'', note:'', entries:[] };
   days.push(d);
   renderItinerary();
   showSync('⟳ 儲存...','var(--muted)');
@@ -3085,8 +3087,11 @@ async function saveDayDate(dayId, date){
 // Render itinerary
 function renderItinerary(){
   const el = document.getElementById('itineraryList');
+  const isLife = currentTrip?.mode === 'life';
   if(!days.length){
-    el.innerHTML=`<div class="empty-state"><div class="emoji">🗓</div><p>還沒有行程，點「＋ 新增天數」開始排行程！<br><br>先到「📍 景點」收集想去的地方，<br>再點景點上的「📅」加入行程。</p></div>`;
+    el.innerHTML = isLife
+      ? `<div class="empty-state"><div class="emoji">📋</div><p>還沒有計劃，點「＋ 新增階段」開始！<br><br>先到「📌 地點」收集要去的地方，<br>再點地點上的「📋」加入計劃。</p></div>`
+      : `<div class="empty-state"><div class="emoji">🗓</div><p>還沒有行程，點「＋ 新增天數」開始排行程！<br><br>先到「📍 景點」收集想去的地方，<br>再點景點上的「📅」加入行程。</p></div>`;
     return;
   }
   const spotCatMap2={'自然':'🌿','歷史':'🏯','美食':'🍜','購物街':'🛍','體驗':'🎨','其他':'📌'};
@@ -3263,14 +3268,14 @@ function renderItinerary(){
         <div class="day-del" onclick="deleteDay(${day.id})">🗑</div>
       </div>
       <div class="day-spots">
-        ${entryCards || '<div class="day-empty">點下方加入地點、交通或備忘</div>'}
+        ${entryCards || `<div class="day-empty">${isLife ? '點下方加入地點或備忘' : '點下方加入地點、交通或備忘'}</div>`}
         ${buildDayAddForm(day.id)}
       </div>
       <!-- Daily diary -->
       <div style="border-top:1px dashed var(--border);padding:10px 12px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">📔 今日日記</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">${isLife ? '📝 階段記錄' : '📔 今日日記'}</div>
         ${(day.diaryPhotos||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">${(day.diaryPhotos||[]).map((url,pi)=>`<div style="position:relative"><img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="openPhotoViewer('${url}')"><button onclick="removeDiaryPhoto(${day.id},${pi})" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:11px">×</button></div>`).join('')}</div>` : ''}
-        <textarea id="diaryText_${day.id}" placeholder="今天的心得、感受..." style="width:100%;font-size:12px;min-height:60px;resize:vertical;border:1px solid var(--border);border-radius:5px;padding:6px;font-family:'Noto Sans TC',sans-serif;background:var(--paper)">${day.diary||''}</textarea>
+        <textarea id="diaryText_${day.id}" placeholder="${isLife ? '記錄這個階段的狀況、進度...' : '今天的心得、感受...'}" style="width:100%;font-size:12px;min-height:60px;resize:vertical;border:1px solid var(--border);border-radius:5px;padding:6px;font-family:'Noto Sans TC',sans-serif;background:var(--paper)">${day.diary||''}</textarea>
         <div style="display:flex;gap:8px;margin-top:6px">
           <input type="file" id="diaryPhotoInput_${day.id}" accept="image/*" multiple style="display:none" onchange="uploadDiaryPhotos(event,${day.id})">
           <button onclick="document.getElementById('diaryPhotoInput_${day.id}').click()" style="flex:1;padding:6px;border:1px dashed var(--border);border-radius:5px;background:var(--paper);font-size:11px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 新增照片</button>
