@@ -2064,8 +2064,13 @@ async function handleReceiptScan(event) {
     const cat = result.category || '';
     if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
     if (result.date) document.getElementById('bud-date').value = result.date;
-      if (result.time) { const bt2=document.getElementById('bud-time');if(bt2)bt2.value=result.time; }
-    if (result.time) document.getElementById('bud-time').value = result.time;
+    if (result.time) {
+      // Ensure HH:MM format
+      const t = result.time.toString().trim().slice(0,5);
+      console.log('Receipt time from GAS:', result.time, '→', t);
+      const bt2 = document.getElementById('bud-time');
+      if (bt2 && /^\d{2}:\d{2}$/.test(t)) bt2.value = t;
+    }
     const note = result.note ? result.note.replace(/\\n/g,'\n') : '';
     document.getElementById('bud-note').value = note;
     updateTWDPreview();
