@@ -3594,6 +3594,10 @@ function selectTripMode(mode) {
   // Default currency for life mode
   const tripCur = document.getElementById('trip-currency');
   if (tripCur && isLife) tripCur.value = 'TWD';
+  
+  // Update emoji picker
+  const ep = document.getElementById('emojiPicker');
+  if (!ep) return;
   ep.innerHTML = '';
   cfg.emojis.split(' ').forEach(e => {
     const s = document.createElement('span');
