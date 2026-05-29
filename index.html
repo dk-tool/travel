@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>旅紀錄</title>
+<title>旅手帳</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Shippori+Mincho:wght@400;600;800&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -242,8 +242,8 @@ textarea{resize:vertical;min-height:60px;}
   <div id="backBtn" onclick="goToTrips()" style="display:none;position:fixed;bottom:20px;left:16px;z-index:200;cursor:pointer;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--border);border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;font-family:'Noto Sans TC',sans-serif">← 首頁</div>
   <div class="header-stamp" id="headerStamp"><span class="stamp-big">旅</span><span>紀錄</span></div>
   <div class="header-text">
-    <h1 id="headerTitle">我的專案</h1>
-    <p id="headerSub">選擇專案開始記錄</p>
+    <h1 id="headerTitle">我的手帳</h1>
+    <p id="headerSub">選擇手帳開始記錄</p>
   </div>
   <div class="header-right">
     <span id="syncStatus"></span>
@@ -254,10 +254,10 @@ textarea{resize:vertical;min-height:60px;}
 <!-- TRIP LIST -->
 <div id="screen-trips" class="screen active">
   <div class="trip-list-wrap">
-    <div class="section-title">📚 我的專案</div>
-    <div class="section-sub">選擇旅遊或生活專案開始記錄</div>
+    <div class="section-title">📚 我的手帳</div>
+    <div class="section-sub">選擇旅遊或生活手帳開始記錄</div>
     <div class="trip-cards" id="tripCards"></div>
-    <button class="btn-add-trip" onclick="openNewTripModal()">＋ 新增專案</button>
+    <button class="btn-add-trip" onclick="openNewTripModal()">＋ 新增手帳</button>
   </div>
 </div>
 
@@ -897,7 +897,7 @@ textarea{resize:vertical;min-height:60px;}
 <div class="modal-backdrop" id="newTripBackdrop" onclick="closeModal('newTripBackdrop',event)">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h3>新增專案</h3>
+    <h3>新增手帳</h3>
     <!-- Mode selector -->
     <div class="form-group" style="margin-bottom:16px">
       <label>類型</label>
@@ -1122,13 +1122,13 @@ function renderTripList(){
   el.innerHTML = `
     ${travelTrips.length ? `
       <div style="font-size:11px;font-weight:700;color:var(--rust);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-        <span>✈️ 旅遊專案</span><div style="flex:1;height:1px;background:var(--border)"></div>
+        <span>✈️ 旅遊手帳</span><div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <div style="margin-bottom:16px">${renderCards(travelTrips)}</div>
     ` : ''}
     ${lifeTrips.length ? `
       <div style="font-size:11px;font-weight:700;color:var(--teal);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-        <span>🏠 生活專案</span><div style="flex:1;height:1px;background:var(--border)"></div>
+        <span>🏠 生活手帳</span><div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <div style="margin-bottom:16px">${renderCards(lifeTrips)}</div>
     ` : ''}
@@ -1263,8 +1263,8 @@ function goToTrips(){
   document.getElementById('screen-trips').classList.add('active');
   document.getElementById('backBtn').style.display = 'none';
   document.getElementById('headerStamp').style.display = '';
-  document.getElementById('headerTitle').textContent='我的專案';
-  document.getElementById('headerSub').textContent='選擇專案開始記錄';
+  document.getElementById('headerTitle').textContent='我的手帳';
+  document.getElementById('headerSub').textContent='選擇手帳開始記錄';
 }
 
 // ══════════════════════════════════════════
