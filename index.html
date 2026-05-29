@@ -3356,14 +3356,34 @@ function selectTripMode(mode) {
   const travelEl = document.getElementById('mode-travel');
   const lifeEl = document.getElementById('mode-life');
   const cfg = MODES[mode];
+  const isLife = mode === 'life';
 
-  // Update UI
+  // Update mode UI
   travelEl.style.borderColor = mode==='travel' ? 'var(--rust)' : 'var(--border)';
   travelEl.style.background = mode==='travel' ? '#fdf5f2' : 'var(--paper)';
   travelEl.querySelector('div:nth-child(2)').style.color = mode==='travel' ? 'var(--rust)' : 'var(--muted)';
   lifeEl.style.borderColor = mode==='life' ? 'var(--teal)' : 'var(--border)';
   lifeEl.style.background = mode==='life' ? '#f0faf8' : 'var(--paper)';
   lifeEl.querySelector('div:nth-child(2)').style.color = mode==='life' ? 'var(--teal)' : 'var(--muted)';
+
+  // Update tab labels based on mode
+  const tabLabels = isLife
+    ? { shopping:'🛒 採購', spots:'📌 地點', itinerary:'📋 計劃', budget:'💸 花費', add:'✏️ 新增' }
+    : { shopping:'🛍 購物', spots:'📍 景點', itinerary:'🗓 行程', budget:'💰 記帳', add:'✏️ 新增' };
+  const tabIds = { shopping:'tab-btn-shopping', spots:'tab-btn-spots', itinerary:'tab-btn-itinerary', budget:'tab-btn-budget' };
+  Object.entries(tabIds).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tabLabels[key];
+  });
+
+  // Update add budget placeholder
+  const budNote = document.getElementById('bud-note');
+  if (budNote) budNote.placeholder = isLife ? 'e.g. 日常雜費 超市購物' : 'e.g. 午餐 拉麵';
+  const shopNote = document.getElementById('shop-name');
+  // Update add spot placeholder
+  const spotNote = document.getElementById('spot-name');
+  if (spotNote) spotNote.placeholder = isLife ? '地點名稱' : '景點名稱';
+
 
   document.getElementById('trip-date-label').textContent = cfg.dateLabel;
   document.getElementById('trip-date').placeholder = cfg.datePlaceholder;
@@ -3385,11 +3405,29 @@ function selectTripMode(mode) {
 
 function applyModeToUI(trip) {
   const mode = trip.mode || 'travel';
+  const isLife = mode === 'life';
   const cfg = MODES[mode];
 
-  // Update tabs
-  document.getElementById('tab-btn-spots').textContent = cfg.tabs.spots;
-  document.getElementById('tab-btn-itinerary').textContent = cfg.tabs.itinerary;
+  // Update all tabs
+  const tabLabels = isLife
+    ? { shopping:'🛒 採購', spots:'📌 地點', itinerary:'📋 計劃', budget:'💸 花費' }
+    : { shopping:'🛍 購物', spots:'📍 景點', itinerary:'🗓 行程', budget:'💰 記帳' };
+  Object.entries(tabLabels).forEach(([key, label]) => {
+    const el = document.getElementById(`tab-btn-${key === 'shopping' ? 'shopping' : key}`);
+    if (el) el.textContent = label;
+  });
+  document.getElementById('tab-btn-shopping').textContent = tabLabels.shopping;
+  document.getElementById('tab-btn-spots').textContent = tabLabels.spots;
+  document.getElementById('tab-btn-itinerary').textContent = tabLabels.itinerary;
+  document.getElementById('tab-btn-budget').textContent = tabLabels.budget;
+
+  // Update placeholders
+  const budNote = document.getElementById('bud-note');
+  if (budNote) budNote.placeholder = isLife ? 'e.g. 日常雜費 超市購物' : 'e.g. 午餐 拉麵';
+  const shopNameInput = document.getElementById('shop-name');
+  if (shopNameInput) shopNameInput.placeholder = isLife ? '品項名稱' : '商品名稱';
+  const spotNameInput = document.getElementById('spot-name');
+  if (spotNameInput) spotNameInput.placeholder = isLife ? '地點名稱' : '景點名稱';
 
   // Update add spot form title and button
   const addSpotTitle = document.querySelector('#panel-add-spot .form-title');
