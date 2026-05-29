@@ -1275,8 +1275,9 @@ async function saveEditTrip() {
   showSync('⟳ 儲存...', 'var(--muted)');
   try {
     const rows = await gsGet(TRIPS_SHEET);
-    const sheetRow = rows.findIndex(r => r[0] === editingTripId) + 1;
-    if (sheetRow > 0) await gsUpdate(TRIPS_SHEET, sheetRow, tripToRow(trip));
+    // Skip header row (index 0), find data row
+    const sheetRow = rows.findIndex((r, i) => i > 0 && r[0] === editingTripId);
+    if (sheetRow > 0) await gsUpdate(TRIPS_SHEET, sheetRow + 1, tripToRow(trip));
     saveCache(CK_TRIPS, trips);
     renderTripList();
     // If editing current trip, apply currency immediately
