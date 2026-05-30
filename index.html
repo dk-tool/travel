@@ -1207,7 +1207,9 @@ async function saveNewTrip(){
   const name=document.getElementById('trip-name').value.trim();
   if(!name){alert('請輸入旅程名稱');return;}
   const currency=getTripCurrency('trip');
-  const trip={id:'trip_'+Date.now(),name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions],mode:currentTripMode,currency};
+  // 加隨機尾碼確保 id 唯一，避免同毫秒或重複送出撞號
+  const uniqueId = 'trip_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  const trip={id:uniqueId,name,date:document.getElementById('trip-date').value.trim(),icon:document.getElementById('trip-icon').value.trim()||'🗾',regions:[...newTripRegions],mode:currentTripMode,currency};
   setBusy(true,'saveTripBtn');showSync('⟳ 建立...','var(--muted)');
   try{
     await gsAppend(TRIPS_SHEET,tripToRow(trip));
