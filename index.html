@@ -543,7 +543,12 @@ textarea{resize:vertical;min-height:60px;}
           <div class="form-group">
             <label>📷 保養單據照片</label>
             <input type="file" id="bud-photo-input" accept="image/*" multiple style="display:none" onchange="uploadBudgetPhotos(event)">
-            <button type="button" onclick="document.getElementById('bud-photo-input').click()" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 上傳照片（存到 Google Drive）</button>
+            <input type="file" id="bud-photo-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadBudgetPhotos(event)">
+            <div style="display:flex;gap:8px">
+              <button type="button" onclick="document.getElementById('bud-photo-camera').click()" style="flex:1;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 拍照</button>
+              <button type="button" onclick="document.getElementById('bud-photo-input').click()" style="flex:1;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">🖼 相簿（多選）</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">拍照可連續一張張拍，相簿可一次多選</div>
             <div id="bud-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
           </div>
         </div>
