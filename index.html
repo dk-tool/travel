@@ -3767,10 +3767,10 @@ const SETTINGS_DEFAULTS = {
   payers:         [],
   shopCats:       ['食品','服飾','美妝','工藝品','紀念品','其他'],
   spotCats:       ['自然','歷史','美食','購物街','體驗','其他'],
-  budgetCats:     ['餐飲','交通','住宿','購物','門票','車輛保養','其他'],
+  budgetCats:     ['餐飲','交通','住宿','購物','門票','其他','車輛保養'],
   lifeShopCats:   ['家電','家具','裝潢','日用品','食材','其他'],
   lifeSpotCats:   ['賣場','建材行','政府機關','銀行','診所','其他'],
-  lifeBudgetCats: ['建材','家電','家具','雜費','餐飲','車輛保養','其他']
+  lifeBudgetCats: ['建材','家電','家具','雜費','餐飲','其他','車輛保養']
 };
 
 let settings = JSON.parse(JSON.stringify(SETTINGS_DEFAULTS)); // deep copy
@@ -3819,16 +3819,12 @@ function getActiveSettings() {
 }
 
 function applySettings() {
-  // 確保車輛保養分類存在（即使載入了舊設定）
+  // 確保車輛保養分類存在（即使載入了舊設定）— 加在最後
   if (settings.budgetCats && !settings.budgetCats.includes('車輛保養')) {
-    const idx = settings.budgetCats.indexOf('其他');
-    if (idx >= 0) settings.budgetCats.splice(idx, 0, '車輛保養');
-    else settings.budgetCats.push('車輛保養');
+    settings.budgetCats.push('車輛保養');
   }
   if (settings.lifeBudgetCats && !settings.lifeBudgetCats.includes('車輛保養')) {
-    const idx = settings.lifeBudgetCats.indexOf('其他');
-    if (idx >= 0) settings.lifeBudgetCats.splice(idx, 0, '車輛保養');
-    else settings.lifeBudgetCats.push('車輛保養');
+    settings.lifeBudgetCats.push('車輛保養');
   }
   const s = getActiveSettings();
   updateSelectOptions('inp-cat',  s.shopCats,   shopCatIcons);
