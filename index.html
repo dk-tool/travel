@@ -540,17 +540,18 @@ textarea{resize:vertical;min-height:60px;}
             <label>🔧 里程數 (km)</label>
             <input type="number" id="bud-mileage" placeholder="e.g. 35000" style="width:100%;font-size:13px">
           </div>
-          <div class="form-group">
-            <label>📷 保養單據照片</label>
-            <input type="file" id="bud-photo-input" accept="image/*" multiple style="display:none" onchange="uploadBudgetPhotos(event)">
-            <input type="file" id="bud-photo-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadBudgetPhotos(event)">
-            <div style="display:flex;gap:8px">
-              <button type="button" onclick="document.getElementById('bud-photo-camera').click()" style="flex:1;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 拍照</button>
-              <button type="button" onclick="document.getElementById('bud-photo-input').click()" style="flex:1;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">🖼 相簿（多選）</button>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">拍照可連續一張張拍，相簿可一次多選</div>
-            <div id="bud-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+        </div>
+        <!-- Photo section - shown for ALL categories -->
+        <div class="form-group">
+          <label>📷 照片（可選）</label>
+          <input type="file" id="bud-photo-input" accept="image/*" multiple style="display:none" onchange="uploadBudgetPhotos(event)">
+          <input type="file" id="bud-photo-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadBudgetPhotos(event)">
+          <div style="display:flex;gap:8px">
+            <button type="button" onclick="document.getElementById('bud-photo-camera').click()" style="flex:1;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 拍照</button>
+            <button type="button" onclick="document.getElementById('bud-photo-input').click()" style="flex:1;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">🖼 相簿（多選）</button>
           </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">拍照可連續一張張拍，相簿可一次多選</div>
+          <div id="bud-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
         </div>
         <!-- Transport fields - shown when 交通 is selected -->
         <div id="bud-transport-fields" style="display:none">
@@ -1981,7 +1982,7 @@ async function addBudgetItem(){
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW'),
     mileage: cat==='車輛保養' ? (document.getElementById('bud-mileage')?.value||'') : '',
-    photos: cat==='車輛保養' ? [...budgetPhotos] : [],
+    photos: [...budgetPhotos],
     _transportMode: transportMode
   };
   setBusy(true,'addBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
@@ -2101,7 +2102,8 @@ async function uploadBudgetPhotos(event) {
     ph.textContent = '⟳';
     preview.appendChild(ph);
     try {
-      const url = await uploadToCloudinary(file, '車輛保養');
+      const cat = document.getElementById('bud-cat')?.value || '記帳';
+      const url = await uploadToCloudinary(file, '記帳_' + cat);
       budgetPhotos.push(url);
       ph.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
       ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==url); ph.remove(); } };
