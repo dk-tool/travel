@@ -519,18 +519,32 @@ textarea{resize:vertical;min-height:60px;}
         <div class="form-row">
           <div class="form-group">
             <label>分類</label>
-            <select id="bud-cat" onchange="toggleTransportFields()">
+            <select id="bud-cat" onchange="toggleTransportFields();toggleVehicleFields()">
               <option value="餐飲">🍜 餐飲</option>
               <option value="交通">🚅 交通</option>
               <option value="住宿">🏨 住宿</option>
               <option value="購物">🛍 購物</option>
               <option value="門票">🎟 門票</option>
+              <option value="車輛保養">🔧 車輛保養</option>
               <option value="其他">📦 其他</option>
             </select>
           </div>
           <div class="form-group">
             <label>地區</label>
             <select id="bud-region"><option value="">不限</option></select>
+          </div>
+        </div>
+        <!-- Vehicle maintenance fields - shown when 車輛保養 is selected -->
+        <div id="bud-vehicle-fields" style="display:none">
+          <div class="form-group">
+            <label>🔧 里程數 (km)</label>
+            <input type="number" id="bud-mileage" placeholder="e.g. 35000" style="width:100%;font-size:13px">
+          </div>
+          <div class="form-group">
+            <label>📷 保養單據照片</label>
+            <input type="file" id="bud-photo-input" accept="image/*" multiple style="display:none" onchange="uploadBudgetPhotos(event)">
+            <button type="button" onclick="document.getElementById('bud-photo-input').click()" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:6px;background:var(--paper);font-size:13px;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif">📷 上傳照片（存到 Google Drive）</button>
+            <div id="bud-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
           </div>
         </div>
         <!-- Transport fields - shown when 交通 is selected -->
@@ -1792,25 +1806,31 @@ function renderRegionChips(){
 // ══════════════════════════════════════════
 // BUDGET
 // ══════════════════════════════════════════
-const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt','time'];
+const BUDGET_COLS = ['id','amount','currency','category','region','date','note','payer','createdAt','time','mileage','photos'];
 let budgetItems=[], budgetRowMap={}, budgetFilter='all';
 let editBudgetId=null;
 // Default rates as fallback (1 TWD = X 幣別)
 let rates = { JPY: 4.5, USD: 0.032, EUR: 0.029, KRW: 43, HKD: 0.25, CNY: 0.23 };
 const CK_RATES='jp2_rates';
-const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','其他':'📦'};
+const catIcon={'餐飲':'🍜','交通':'🚅','住宿':'🏨','購物':'🛍','門票':'🎟','車輛保養':'🔧','其他':'📦'};
 
-function budgetToRow(item){return BUDGET_COLS.map(k=>item[k]??'');}
+function budgetToRow(item){return BUDGET_COLS.map(k=>{
+  if(k==='photos') return JSON.stringify(item.photos||[]);
+  return item[k]??'';
+});}
 function rowToBudget(row){
   const i = {};
-  // Old format has 9 cols (no time), new has 10 cols (time is last)
+  // Old format has 9 cols (no time), new has 10+ cols
   const oldCols = ['id','amount','currency','category','region','date','note','payer','createdAt'];
   const cols = row.length <= 9 ? oldCols : BUDGET_COLS;
   cols.forEach((k,n) => {
     if (k==='id') i[k] = parseInt(row[n])||0;
+    else if (k==='photos') { try { i[k] = JSON.parse(row[n]||'[]'); } catch(e) { i[k] = []; } }
     else i[k] = row[n]||'';
   });
   if (!i.time) i.time = '';
+  if (!i.mileage) i.mileage = '';
+  if (!i.photos) i.photos = [];
   return i;
 }
 
@@ -1955,6 +1975,8 @@ async function addBudgetItem(){
     date, time, note,
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW'),
+    mileage: cat==='車輛保養' ? (document.getElementById('bud-mileage')?.value||'') : '',
+    photos: cat==='車輛保養' ? [...budgetPhotos] : [],
     _transportMode: transportMode
   };
   setBusy(true,'addBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
@@ -2053,6 +2075,46 @@ function toggleTransportFields() {
   if (el) el.style.display = cat === '交通' ? '' : 'none';
 }
 
+function toggleVehicleFields() {
+  const cat = document.getElementById('bud-cat')?.value;
+  const el = document.getElementById('bud-vehicle-fields');
+  if (el) el.style.display = cat === '車輛保養' ? '' : 'none';
+}
+
+let budgetPhotos = []; // temp store for current budget entry photos
+
+async function uploadBudgetPhotos(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  const preview = document.getElementById('bud-photo-preview');
+  for (const file of files) {
+    const tmpId = 'tmp_' + Date.now() + Math.random();
+    // Show loading placeholder
+    const ph = document.createElement('div');
+    ph.id = tmpId;
+    ph.style.cssText = 'width:70px;height:70px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);background:var(--paper)';
+    ph.textContent = '⟳';
+    preview.appendChild(ph);
+    try {
+      const base64 = await fileToBase64Compressed(file, 1600);
+      const fileName = 'vehicle_' + Date.now();
+      const folderName = '旅手帳照片/車輛保養/' + (currentTrip?.name || '未命名');
+      const result = await gasCall({ action:'uploadToDrive', imageBase64:base64, fileName, folderName });
+      if (result.url) {
+        budgetPhotos.push(result.url);
+        ph.innerHTML = `<img src="${result.url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
+        ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==result.url); ph.remove(); } };
+      } else {
+        ph.textContent = '❌';
+      }
+    } catch(e) {
+      ph.textContent = '❌';
+      console.error('Upload failed:', e);
+    }
+  }
+  event.target.value = '';
+}
+
 function setBudgetFilter(f){
   document.querySelectorAll('#panel-budget .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
   renderBudget();
@@ -2070,6 +2132,11 @@ function clearBudgetForm(){
   const bf=document.getElementById('bud-from');if(bf)bf.value='';
   const bto=document.getElementById('bud-to');if(bto)bto.value='';
   toggleTransportFields();
+  // Clear vehicle fields
+  const bm=document.getElementById('bud-mileage');if(bm)bm.value='';
+  budgetPhotos=[];
+  const bpp=document.getElementById('bud-photo-preview');if(bpp)bpp.innerHTML='';
+  toggleVehicleFields();
   document.getElementById('bud-payer').value='';
   document.getElementById('bud-payer-custom').value='';
   document.getElementById('twdPreview').textContent='';
@@ -2159,11 +2226,13 @@ function renderBudget(){
               ${twd&&item.currency!=='TWD'?`<span class="budget-item-twd">${fmtTWD(twd)}</span>`:''}
             </div>
             <div class="budget-item-meta">
-              <span>${item.category}</span>
+              <span>${catIcon[item.category]||''}${item.category}</span>
               ${item.region?`<span>📍${item.region}</span>`:''}
+              ${item.mileage?`<span>🔧 ${parseInt(item.mileage).toLocaleString()} km</span>`:''}
               ${item.note?`<span style="white-space:pre-wrap;word-break:break-word">${item.note}</span>`:''}
               ${item.payer?`<span>👤 ${item.payer}</span>`:''}
             </div>
+            ${(item.photos&&item.photos.length)?`<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">${item.photos.map(url=>`<img src="${url}" style="width:54px;height:54px;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer" onclick="event.stopPropagation();openPhotoViewer('${url}')">`).join('')}</div>`:''}
           </div>
           <div class="budget-item-actions">
             <div class="act-btn" onclick="openEditBudget(${item.id})">✏️</div>
