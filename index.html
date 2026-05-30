@@ -2096,17 +2096,10 @@ async function uploadBudgetPhotos(event) {
     ph.textContent = '⟳';
     preview.appendChild(ph);
     try {
-      const base64 = await fileToBase64Compressed(file, 1600);
-      const fileName = 'vehicle_' + Date.now();
-      const folderName = '旅手帳照片/車輛保養/' + (currentTrip?.name || '未命名');
-      const result = await gasCall({ action:'uploadToDrive', imageBase64:base64, fileName, folderName });
-      if (result.url) {
-        budgetPhotos.push(result.url);
-        ph.innerHTML = `<img src="${result.url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
-        ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==result.url); ph.remove(); } };
-      } else {
-        ph.textContent = '❌';
-      }
+      const url = await uploadToCloudinary(file, '車輛保養');
+      budgetPhotos.push(url);
+      ph.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
+      ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==url); ph.remove(); } };
     } catch(e) {
       ph.textContent = '❌';
       console.error('Upload failed:', e);
@@ -2248,24 +2241,19 @@ function renderBudget(){
 // CLOUDINARY PHOTO UPLOAD
 // ══════════════════════════════════════════
 const CLD_CLOUD  = 'dnqktmqfi';
-const CLD_PRESET = 'travel_unsigned'; // unsigned upload preset
+const CLD_PRESET = 'travel_unsigned'; // unsigned upload preset (legacy, kept as fallback)
 const CLD_URL    = `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`;
 
-// Upload one photo, return secure_url
-async function uploadToCloudinary(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('upload_preset', CLD_PRESET);
-  const resp = await fetch(CLD_URL, { method:'POST', body: fd });
-  const data = await resp.json();
-  if (!resp.ok || data.error) {
-    const msg = data.error?.message || `HTTP ${resp.status}`;
-    if (msg.includes('preset') || msg.includes('upload_preset')) {
-      throw new Error('請到 Cloudinary → Settings → Upload → 建立 Unsigned preset 名稱「travel_unsigned」');
-    }
-    throw new Error(msg);
-  }
-  return data.secure_url;
+// Upload one photo to Google Drive, return shareable URL
+// category: 子資料夾分類（購物/景點/日記/車輛保養）
+async function uploadToCloudinary(file, category='其他') {
+  const base64 = await fileToBase64Compressed(file, 1600);
+  const tripName = (currentTrip?.name || '未命名').replace(/[\/\\]/g,'_');
+  const folderName = `旅手帳照片/${tripName}/${category}`;
+  const fileName = category + '_' + Date.now();
+  const result = await gasCall({ action:'uploadToDrive', imageBase64:base64, fileName, folderName });
+  if (!result || !result.url) throw new Error(result?.error || '上傳失敗');
+  return result.url;
 }
 
 // Handle photo selection & upload for a form
@@ -2278,7 +2266,7 @@ async function uploadShopPhoto(event, fieldId) {
   statusEl.textContent = '⟳ 上傳中...';
   statusEl.style.color = 'var(--muted)';
   try {
-    const url = await uploadToCloudinary(file);
+    const url = await uploadToCloudinary(file, '購物');
     const photos = safeJSON(hiddenEl.value, []);
     photos.push(url);
     hiddenEl.value = JSON.stringify(photos);
@@ -2655,7 +2643,7 @@ async function uploadReviewPhotos(event) {
   statusEl.textContent = `⟳ 上傳 ${files.length} 張照片...`;
   try {
     for (const file of files) {
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, '景點');
       reviewPhotos.push(url);
       renderReviewPhotos();
     }
@@ -2770,7 +2758,7 @@ async function uploadDiaryPhotos(event, dayId) {
   if (!day.diaryPhotos) day.diaryPhotos = [];
   try {
     for (const file of files) {
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, '日記');
       day.diaryPhotos.push(url);
     }
     renderItinerary();
