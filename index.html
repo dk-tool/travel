@@ -2353,6 +2353,22 @@ async function saveScannedReceiptPhoto(file, category) {
   }
 }
 
+// 使用者主動點擊才套用掃描偵測到的幣別
+function applyScannedCurrency(cur) {
+  const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
+  const sel = document.getElementById('bud-currency');
+  const custom = document.getElementById('bud-currency-custom');
+  if (stdCurs.includes(cur)) {
+    if (sel) sel.value = cur;
+    if (custom) custom.value = '';
+  } else {
+    if (custom) custom.value = cur;
+  }
+  updateTWDPreview();
+  const statusEl = document.getElementById('scanStatus');
+  if (statusEl) { statusEl.textContent = `✅ 已改用 ${cur}`; statusEl.style.color = 'var(--sage)'; }
+}
+
 async function handleReceiptScan(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -2382,9 +2398,17 @@ async function handleReceiptScan(event) {
   const fillForm = (result) => {
     document.getElementById('bud-amount').value = result.amount;
     const stdCurs = ['JPY','TWD','USD','EUR','KRW','HKD'];
-    const cur = result.currency || 'JPY';
-    if (stdCurs.includes(cur)) { document.getElementById('bud-currency').value = cur; document.getElementById('bud-currency-custom').value=''; }
-    else { document.getElementById('bud-currency-custom').value = cur; }
+    const scannedCur = result.currency || '';
+    // 目前使用者已選的幣值（手帳預設或手動選的）
+    const curSelEl = document.getElementById('bud-currency');
+    const curCustomEl = document.getElementById('bud-currency-custom');
+    const currentCur = (curCustomEl && curCustomEl.value.trim()) || (curSelEl && curSelEl.value) || '';
+    // 不強制覆蓋使用者已選的幣值。只有在使用者尚未特別選（仍是預設）時才套用掃描結果。
+    // 若掃描幣別與目前不同，顯示一鍵切換提示。
+    window._scanCurrencyHint = '';
+    if (scannedCur && scannedCur !== currentCur) {
+      window._scanCurrencyHint = scannedCur;
+    }
     const validCats = getActiveSettings().budgetCats;
     const cat = result.category || '';
     if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
@@ -2431,6 +2455,14 @@ async function handleReceiptScan(event) {
     } else {
       statusEl.textContent = '✅ 已填入表單，請確認後新增';
       statusEl.style.color = 'var(--sage)';
+    }
+    // 若掃描幣別與目前選的不同，附加一鍵切換提示（不強制覆蓋）
+    if (window._scanCurrencyHint) {
+      const sc = window._scanCurrencyHint;
+      const baseHtml = statusEl.innerHTML;
+      statusEl.innerHTML = baseHtml +
+        `<div style="margin-top:6px;font-size:12px;color:var(--gold)">偵測到幣別可能是 <b>${sc}</b>，目前保留你選的幣值。` +
+        `<button type="button" onclick="applyScannedCurrency('${sc}')" style="margin-left:6px;padding:2px 10px;border:1px solid var(--gold);border-radius:4px;background:var(--paper);color:var(--gold);font-size:12px;cursor:pointer">改用 ${sc}</button></div>`;
     }
     document.getElementById('bud-amount').scrollIntoView({ behavior:'smooth', block:'center' });
   };
