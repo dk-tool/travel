@@ -493,7 +493,7 @@ textarea{resize:vertical;min-height:60px;}
           <input type="checkbox" id="scanSavePhoto" checked style="width:16px;height:16px;cursor:pointer">
           <span>分析後，照片跟著這筆花費一起存（按「新增記帳」才上傳）</span>
         </label>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:14px">💡 一次選多張收據會自動分析並合併成一筆（金額加總）</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px">💡 一次選多張收據（同一筆消費的明細）會合併成一筆，金額取總計那張</div>
         <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:6px;min-height:16px;text-align:center"></div>
         <button id="retryBtn" onclick="retryReceiptScan()" style="display:none;width:100%;padding:8px;border:1px solid var(--gold);border-radius:6px;background:#fffbf0;font-size:12px;color:var(--gold);font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-bottom:8px">🔄 重新辨識同一張照片</button>
         <!-- Preview -->
@@ -2456,14 +2456,15 @@ async function handleReceiptScan(event) {
     return attempt();
   };
 
-  // 合併多張辨識結果為一筆
+  // 合併多張辨識結果為一筆（同一筆消費，金額不加總，取偵測到的最大金額為總額）
   const mergeResults = (results) => {
-    let totalAmount = 0;
+    let maxAmount = 0;
     const notes = [];
     let currency = '', category = '', date = '', time = '', mileage = '';
     results.forEach((r, i) => {
       if (r && r.amount) {
-        totalAmount += parseFloat(r.amount) || 0;
+        const amt = parseFloat(r.amount) || 0;
+        if (amt > maxAmount) maxAmount = amt;
         // 第一張的幣別/分類/日期/時間為主
         if (!currency) currency = r.currency || '';
         if (!category) category = r.category || '';
@@ -2478,7 +2479,7 @@ async function handleReceiptScan(event) {
       }
     });
     return {
-      amount: totalAmount,
+      amount: maxAmount,
       currency, category, date, time, mileage,
       note: notes.join('\n\n')
     };
@@ -2510,7 +2511,7 @@ async function handleReceiptScan(event) {
     document.getElementById('bud-note').value = result.note || '';
     updateTWDPreview();
 
-    const countMsg = scannedCount > 1 ? `✅ 已合併 ${scannedCount} 張收據（金額已加總），請確認後新增` : '✅ 已填入表單，請確認後新增';
+    const countMsg = scannedCount > 1 ? `✅ 已合併 ${scannedCount} 張收據（明細合併，金額取總計），請確認後新增` : '✅ 已填入表單，請確認後新增';
     statusEl.textContent = countMsg;
     statusEl.style.color = 'var(--sage)';
     if (window._scanCurrencyHint) {
