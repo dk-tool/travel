@@ -2494,13 +2494,19 @@ async function handleReceiptScan(event) {
     window._scanCurrencyHint = '';
     if (scannedCur && scannedCur !== currentCur) window._scanCurrencyHint = scannedCur;
     const validCats = getActiveSettings().budgetCats;
-    const cat = result.category || '';
+    let cat = result.category || '';
+    // 若掃描有回傳里程數，幾乎肯定是車輛單據 → 自動設為車輛保養分類
+    const scannedMileage = result.mileage ? String(result.mileage).replace(/[^\d]/g,'') : '';
+    if (scannedMileage && validCats.includes('車輛保養')) {
+      cat = '車輛保養';
+    }
     if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
     toggleVehicleFields();
     toggleTransportFields();
-    if (cat === '車輛保養' && result.mileage) {
+    // 只要掃到里程數就填入（此時分類已切到車輛保養，欄位已顯示）
+    if (scannedMileage) {
       const bm = document.getElementById('bud-mileage');
-      if (bm) bm.value = String(result.mileage).replace(/[^\d]/g,'');
+      if (bm) bm.value = scannedMileage;
     }
     if (result.date) document.getElementById('bud-date').value = result.date;
     if (result.time) {
