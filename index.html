@@ -2428,7 +2428,9 @@ async function handleReceiptScan(event) {
       const bt2 = document.getElementById('bud-time');
       if (bt2 && /^\d{2}:\d{2}$/.test(t)) bt2.value = t;
     }
-    const note = result.note ? result.note.replace(/\\n/g,'\n') : '';
+    let note = result.note ? result.note.replace(/\\n/g,'\n') : '';
+    // 去除品項金額前的幣別符號（¥ 円 $ NT＄ 等），幣別由使用者選擇決定
+    note = note.replace(/[¥￥＄$]\s?(?=\d)/g, '').replace(/\s?円/g, '');
     document.getElementById('bud-note').value = note;
     updateTWDPreview();
 
