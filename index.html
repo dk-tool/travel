@@ -481,7 +481,7 @@ textarea{resize:vertical;min-height:60px;}
         <!-- Scan button -->
         <input type="file" id="receiptFileInput" accept="image/*" style="display:none" onchange="handleReceiptScan(event)">
         <input type="file" id="receiptCameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptScan(event)">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
           <button type="button" onclick="document.getElementById('receiptCameraInput').click()" style="padding:12px 8px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
             📷 拍照
           </button>
@@ -489,6 +489,10 @@ textarea{resize:vertical;min-height:60px;}
             🖼 選相片
           </button>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:14px;cursor:pointer">
+          <input type="checkbox" id="scanSavePhoto" checked style="width:16px;height:16px;cursor:pointer">
+          <span>掃描的同時，把這張收據照片一起存到 Google Drive</span>
+        </label>
         <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:6px;min-height:16px;text-align:center"></div>
         <button id="retryBtn" onclick="retryReceiptScan()" style="display:none;width:100%;padding:8px;border:1px solid var(--gold);border-radius:6px;background:#fffbf0;font-size:12px;color:var(--gold);font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-bottom:8px">🔄 重新辨識同一張照片</button>
         <!-- Preview -->
@@ -2331,6 +2335,24 @@ function retryReceiptScan() {
   handleReceiptScan({ target: { files: [window._lastReceiptFile], value: '' } });
 }
 
+// Upload the scanned receipt photo into budgetPhotos (shared with manual photo preview)
+async function saveScannedReceiptPhoto(file, category) {
+  const preview = document.getElementById('bud-photo-preview');
+  const ph = document.createElement('div');
+  ph.style.cssText = 'width:70px;height:70px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);background:var(--paper)';
+  ph.textContent = '⟳';
+  if (preview) preview.appendChild(ph);
+  try {
+    const url = await uploadToCloudinary(file, '記帳_' + (category || '其他'));
+    budgetPhotos.push(url);
+    ph.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
+    ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==url); ph.remove(); } };
+  } catch(e) {
+    ph.textContent = '❌';
+    console.error('Receipt photo save failed:', e);
+  }
+}
+
 async function handleReceiptScan(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -2366,6 +2388,14 @@ async function handleReceiptScan(event) {
     const validCats = getActiveSettings().budgetCats;
     const cat = result.category || '';
     if (validCats.includes(cat)) document.getElementById('bud-cat').value = cat;
+    // Toggle category-dependent fields (vehicle mileage / transport)
+    toggleVehicleFields();
+    toggleTransportFields();
+    // Fill mileage if vehicle maintenance and scan returned it
+    if (cat === '車輛保養' && result.mileage) {
+      const bm = document.getElementById('bud-mileage');
+      if (bm) bm.value = String(result.mileage).replace(/[^\d]/g,'');
+    }
     if (result.date) document.getElementById('bud-date').value = result.date;
     if (result.time) {
       // Ensure HH:MM format
@@ -2409,7 +2439,14 @@ async function handleReceiptScan(event) {
     try {
       const base64 = await fileToBase64Compressed(file2, 1600);
       const result = await gasCall({ action:'scanReceipt', imageBase64:base64, mimeType:'image/jpeg' });
-      if (result.amount) { fillForm(result); }
+      if (result.amount) {
+        fillForm(result);
+        // If "save photo" checked, upload this receipt photo to budgetPhotos
+        const saveChk = document.getElementById('scanSavePhoto');
+        if (saveChk && saveChk.checked) {
+          saveScannedReceiptPhoto(file2, result.category || '其他');
+        }
+      }
       else { statusEl.innerHTML = '❌ 辨識失敗，請重試 <button onclick="doScan()" style="margin-left:6px;padding:2px 10px;border:1px solid var(--red);border-radius:4px;background:var(--paper);color:var(--red);font-size:12px;cursor:pointer">🔄 重試</button>'; statusEl.style.color = 'var(--red)'; }
     } catch(e) {
       const isRetryable = e.message && (e.message.includes('high demand') || e.message.includes('overloaded') || e.message.includes('503') || e.message.includes('429') || e.message.includes('temporarily'));
