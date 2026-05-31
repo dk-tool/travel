@@ -479,19 +479,19 @@ textarea{resize:vertical;min-height:60px;}
         <div class="form-title">💰 新增記帳</div>
 
         <!-- Scan button -->
-        <input type="file" id="receiptFileInput" accept="image/*" style="display:none" onchange="handleReceiptScan(event)">
+        <input type="file" id="receiptFileInput" accept="image/*" multiple style="display:none" onchange="handleReceiptScan(event)">
         <input type="file" id="receiptCameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptScan(event)">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
           <button type="button" onclick="document.getElementById('receiptCameraInput').click()" style="padding:12px 8px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
             📷 拍照
           </button>
           <button type="button" onclick="document.getElementById('receiptFileInput').click()" style="padding:12px 8px;border:2px dashed var(--gold);border-radius:8px;background:#fffbf0;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
-            🖼 選相片
+            🖼 選相片（可多張）
           </button>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:14px;cursor:pointer">
           <input type="checkbox" id="scanSavePhoto" checked style="width:16px;height:16px;cursor:pointer">
-          <span>掃描的同時，把這張收據照片一起存到 Google Drive</span>
+          <span>分析後，照片跟著這筆花費一起存（按「新增記帳」才上傳）</span>
         </label>
         <div id="scanStatus" style="font-size:12px;color:var(--muted);margin-bottom:6px;min-height:16px;text-align:center"></div>
         <button id="retryBtn" onclick="retryReceiptScan()" style="display:none;width:100%;padding:8px;border:1px solid var(--gold);border-radius:6px;background:#fffbf0;font-size:12px;color:var(--gold);font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-bottom:8px">🔄 重新辨識同一張照片</button>
@@ -1988,11 +1988,27 @@ async function addBudgetItem(){
     payer:document.getElementById('bud-payer-custom').value.trim()||document.getElementById('bud-payer').value||'',
     createdAt:new Date().toLocaleDateString('zh-TW'),
     mileage: cat==='車輛保養' ? (document.getElementById('bud-mileage')?.value||'') : '',
-    photos: [...budgetPhotos],
+    photos: [],
     _transportMode: transportMode
   };
-  setBusy(true,'addBudgetBtn');showSync('⟳ 儲存...','var(--muted)');
+  setBusy(true,'addBudgetBtn');
   try{
+    // 先上傳暫存的照片到 Drive，取得連結後跟此筆花費一起記錄
+    if (budgetPendingPhotos.length) {
+      showSync(`⟳ 上傳 ${budgetPendingPhotos.length} 張照片...`,'var(--muted)');
+      const urls = [];
+      for (const p of budgetPendingPhotos) {
+        try {
+          const url = await uploadToCloudinary(p.file, '記帳_' + cat);
+          urls.push(url);
+        } catch(e) {
+          console.error('Photo upload failed:', e);
+          if (!confirm('有照片上傳失敗，仍要繼續新增這筆記帳嗎？')) { setBusy(false,'addBudgetBtn'); showSync('已取消','var(--muted)'); return; }
+        }
+      }
+      item.photos = urls;
+    }
+    showSync('⟳ 儲存...','var(--muted)');
     await gsAppend(currentTrip.id+'_budget',budgetToRow(item));
     budgetItems.unshift(item);
     clearBudgetForm();switchTab('budget');renderBudget();
@@ -2093,32 +2109,47 @@ function toggleVehicleFields() {
   if (el) el.style.display = cat === '車輛保養' ? '' : 'none';
 }
 
-let budgetPhotos = []; // temp store for current budget entry photos
+// 暫存待上傳的照片：{ file, previewUrl(base64), divEl }，按「新增記帳」時才上傳 Drive
+let budgetPendingPhotos = [];
+
+function renderBudgetPhotoPreview() {
+  const preview = document.getElementById('bud-photo-preview');
+  if (!preview) return;
+  preview.innerHTML = '';
+  budgetPendingPhotos.forEach((p, idx) => {
+    const ph = document.createElement('div');
+    ph.style.cssText = 'position:relative;width:70px;height:70px;border-radius:6px;border:1px solid var(--border);overflow:hidden';
+    ph.innerHTML = `<img src="${p.previewUrl}" style="width:100%;height:100%;object-fit:cover">
+      <button type="button" style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:12px;cursor:pointer;line-height:1" onclick="removeBudgetPendingPhoto(${idx})">×</button>`;
+    preview.appendChild(ph);
+  });
+}
+
+function removeBudgetPendingPhoto(idx) {
+  budgetPendingPhotos.splice(idx, 1);
+  renderBudgetPhotoPreview();
+}
 
 async function uploadBudgetPhotos(event) {
   const files = Array.from(event.target.files || []);
   if (!files.length) return;
-  const preview = document.getElementById('bud-photo-preview');
   for (const file of files) {
-    const tmpId = 'tmp_' + Date.now() + Math.random();
-    // Show loading placeholder
-    const ph = document.createElement('div');
-    ph.id = tmpId;
-    ph.style.cssText = 'width:70px;height:70px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);background:var(--paper)';
-    ph.textContent = '⟳';
-    preview.appendChild(ph);
-    try {
-      const cat = document.getElementById('bud-cat')?.value || '記帳';
-      const url = await uploadToCloudinary(file, '記帳_' + cat);
-      budgetPhotos.push(url);
-      ph.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
-      ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==url); ph.remove(); } };
-    } catch(e) {
-      ph.textContent = '❌';
-      console.error('Upload failed:', e);
-    }
+    // 只做本地預覽，不上傳；原始檔案暫存等按新增記帳才上傳
+    const previewUrl = await fileToBase64Preview(file);
+    budgetPendingPhotos.push({ file, previewUrl });
   }
+  renderBudgetPhotoPreview();
   event.target.value = '';
+}
+
+// 產生本地預覽用的 base64（不壓縮太多，僅供畫面顯示）
+function fileToBase64Preview(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function setBudgetFilter(f){
@@ -2140,7 +2171,7 @@ function clearBudgetForm(){
   toggleTransportFields();
   // Clear vehicle fields
   const bm=document.getElementById('bud-mileage');if(bm)bm.value='';
-  budgetPhotos=[];
+  budgetPendingPhotos=[];
   const bpp=document.getElementById('bud-photo-preview');if(bpp)bpp.innerHTML='';
   toggleVehicleFields();
   document.getElementById('bud-payer').value='';
@@ -2337,19 +2368,13 @@ function retryReceiptScan() {
 
 // Upload the scanned receipt photo into budgetPhotos (shared with manual photo preview)
 async function saveScannedReceiptPhoto(file, category) {
-  const preview = document.getElementById('bud-photo-preview');
-  const ph = document.createElement('div');
-  ph.style.cssText = 'width:70px;height:70px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);background:var(--paper)';
-  ph.textContent = '⟳';
-  if (preview) preview.appendChild(ph);
+  // 改為暫存，不立即上傳；等使用者按「新增記帳」才一起上傳 Drive
   try {
-    const url = await uploadToCloudinary(file, '記帳_' + (category || '其他'));
-    budgetPhotos.push(url);
-    ph.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`;
-    ph.onclick = () => { if(confirm('移除這張照片？')){ budgetPhotos = budgetPhotos.filter(u=>u!==url); ph.remove(); } };
+    const previewUrl = await fileToBase64Preview(file);
+    budgetPendingPhotos.push({ file, previewUrl });
+    renderBudgetPhotoPreview();
   } catch(e) {
-    ph.textContent = '❌';
-    console.error('Receipt photo save failed:', e);
+    console.error('Receipt photo preview failed:', e);
   }
 }
 
@@ -2370,8 +2395,22 @@ function applyScannedCurrency(cur) {
 }
 
 async function handleReceiptScan(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  const file = files[0];
+
+  // 多張：第一張拿去分析，其餘張只暫存照片（若有勾選儲存）
+  const saveChk = document.getElementById('scanSavePhoto');
+  const willSave = saveChk && saveChk.checked;
+  if (willSave && files.length > 1) {
+    for (let i = 1; i < files.length; i++) {
+      const f = files[i];
+      fileToBase64Preview(f).then(previewUrl => {
+        budgetPendingPhotos.push({ file: f, previewUrl });
+        renderBudgetPhotoPreview();
+      });
+    }
+  }
 
   const reader = new FileReader();
   reader.onload = e => {
