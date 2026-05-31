@@ -448,6 +448,7 @@ textarea{resize:vertical;min-height:60px;}
         <button class="filter-btn" onclick="setBudgetFilter('住宿')">🏨 住宿</button>
         <button class="filter-btn" onclick="setBudgetFilter('購物')">🛍 購物</button>
         <button class="filter-btn" onclick="setBudgetFilter('門票')">🎟 門票</button>
+        <button class="filter-btn" onclick="setBudgetFilter('車輛保養')">🔧 車輛保養</button>
         <button class="filter-btn" onclick="setBudgetFilter('其他')">📦 其他</button>
       </div>
       <div id="budgetList"></div>
@@ -2157,7 +2158,14 @@ function fileToBase64Preview(file) {
 }
 
 function setBudgetFilter(f){
-  document.querySelectorAll('#panel-budget .filter-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===f||(f==='all'&&b.textContent.trim()==='全部')));
+  budgetFilter = f;
+  document.querySelectorAll('#panel-budget .filter-btn').forEach(b=>{
+    const label = b.textContent.trim();
+    // 按鈕文字含 emoji（如「🍜 餐飲」），比對時取最後的分類名
+    const catName = label.replace(/^[^\u4e00-\u9fa5a-zA-Z]+/, '').trim();
+    const isActive = (f==='all' && label==='全部') || catName===f;
+    b.classList.toggle('active', isActive);
+  });
   renderBudget();
 }
 
@@ -2267,7 +2275,7 @@ function renderBudget(){
               ${twd&&item.currency!=='TWD'?`<span class="budget-item-twd">${fmtTWD(twd)}</span>`:''}
             </div>
             <div class="budget-item-meta">
-              <span>${catIcon[item.category]||''}${item.category}</span>
+              <span onclick="event.stopPropagation();setBudgetFilter(budgetFilter==='${item.category}'?'all':'${item.category}')" style="cursor:pointer;${budgetFilter===item.category?'background:var(--ink);color:var(--paper);border-radius:10px;padding:1px 7px;':''}" title="點擊篩選此分類">${catIcon[item.category]||''}${item.category}</span>
               ${item.region?`<span>📍${item.region}</span>`:''}
               ${item.mileage?`<span>🔧 ${parseInt(item.mileage).toLocaleString()} km</span>`:''}
               ${item.note?`<span style="white-space:pre-wrap;word-break:break-word">${item.note}</span>`:''}
