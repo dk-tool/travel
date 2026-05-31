@@ -2526,22 +2526,33 @@ async function handleReceiptScan(event) {
   // 逐張分析
   try {
     const results = [];
+    let lastErr = '';
     for (let i = 0; i < files.length; i++) {
       statusEl.textContent = files.length > 1 ? `⟳ 辨識中 ${i+1}/${files.length}...` : '⟳ 辨識中...';
       statusEl.style.color = 'var(--muted)';
       const r = await scanOne(files[i], i+1, files.length);
-      if (r && r.amount) results.push(r);
+      if (r && r.amount) {
+        results.push(r);
+      } else if (r && r.error) {
+        lastErr = r.error;
+      } else if (r) {
+        // 回傳了東西但沒有 amount，記錄內容方便除錯
+        lastErr = '辨識不到金額（回傳：' + JSON.stringify(r).slice(0,150) + '）';
+      }
     }
     if (!results.length) {
-      statusEl.innerHTML = '❌ 辨識失敗，請重試';
+      statusEl.innerHTML = '❌ ' + (lastErr || '辨識失敗，請重試') +
+        ' <button onclick="retryReceiptScan()" style="margin-left:6px;padding:2px 10px;border:1px solid var(--red);border-radius:4px;background:var(--paper);color:var(--red);font-size:12px;cursor:pointer">🔄 重試</button>';
       statusEl.style.color = 'var(--red)';
     } else {
       const merged = mergeResults(results);
       fillForm(merged, results.length);
     }
   } catch(e) {
-    statusEl.innerHTML = '❌ ' + e.message;
+    statusEl.innerHTML = '❌ ' + (e.message || e || '未知錯誤') +
+      ' <button onclick="retryReceiptScan()" style="margin-left:6px;padding:2px 10px;border:1px solid var(--red);border-radius:4px;background:var(--paper);color:var(--red);font-size:12px;cursor:pointer">🔄 重試</button>';
     statusEl.style.color = 'var(--red)';
+    console.error('Scan error:', e);
   }
   event.target.value = '';
 }
